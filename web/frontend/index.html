@@ -11,33 +11,77 @@
 <body>
 
     <!-- Panel Lateral de Control -->
+    <!-- Panel Lateral de Control -->
     <aside id="ui-panel">
+        <!-- Logo de SpaceH -->
+        <div class="logo-container">
+            <img src="assets/logo-spaceh.jpeg" alt="SpaceH Logo" class="app-logo">
+        </div>
+
         <header class="panel-header">
             <div class="status-badge"><span class="pulse-dot"></span> SYSTEM ONLINE</div>
-            <h1>EXOPLANETARY 3D</h1>
-            <p id="current-view-label">Módulo Activo: <strong id="planet-name">Marte</strong></p>
-        </header>
 
         <!-- Selector de Planeta de Origen -->
         <section class="control-section" id="planet-selector-section">
             <label class="section-title">01. Cuerpo Celeste de Origen</label>
             <div class="select-wrapper">
                 <select id="planet-select">
-                    <option value="mars">🔴 Marte (Superficie)</option>
-                    <option value="moon">⚪ La Luna (Regolito)</option>
+                    <option value="mars">Marte </option>
+                    <option value="moon">La Luna </option>
                 </select>
             </div>
         </section>
 
-        <!-- Variables de Análisis -->
-        <section class="control-section">
-            <label class="section-title">02. Variable Espectral</label>
-            <div class="select-wrapper">
-                <select id="variable-select">
-                    <option value="elevation">Elevación y Topografía (DEM)</option>
-                    <option value="minerals">Composición Mineral / Óxidos</option>
-                    <option value="suitability">Idoneidad para Hábitat Base</option>
-                </select>
+        <!-- Variables de Análisis / Ponderación con Barras Deslizantes -->
+        <section class="control-section" id="variables-section">
+            <label class="section-title">02. Ponderación de Variables</label>
+            <div class="variables-dropdown-wrapper">
+                <button type="button" id="variables-dropdown-btn" class="dropdown-trigger-btn">
+                    <span class="dropdown-btn-title">
+                        <span class="icon">⚖️</span>
+                        <span>Pesos de Estudio</span>
+                        <span class="badge" id="active-vars-badge">3 Activas</span>
+                    </span>
+                    <span class="chevron-icon" id="dropdown-chevron">▼</span>
+                </button>
+
+                <div id="variables-dropdown-menu" class="variables-dropdown-menu">
+                    <!-- Variable 1: Topografía -->
+                    <div class="weight-item">
+                        <div class="weight-header">
+                            <span class="var-name">Topografía (DEM)</span>
+                            <span class="weight-val" id="val-topography">75%</span>
+                        </div>
+                        <span class="var-desc">Altimetría y pendientes del terreno</span>
+                        <div class="slider-row">
+                            <input type="range" id="slider-topography" class="weight-slider" data-var="Topografía (DEM)" min="0" max="100" value="75" step="5">
+                        </div>
+                    </div>
+
+                    <!-- Variable 2: Albedo -->
+                    <div class="weight-item">
+                        <div class="weight-header">
+                            <span class="var-name">Albedo Superficial</span>
+                            <span class="weight-val" id="val-albedo">60%</span>
+                        </div>
+                        <span class="var-desc">Reflectancia espectral de radiación solar</span>
+                        <div class="slider-row">
+                            <input type="range" id="slider-albedo" class="weight-slider" data-var="Albedo" min="0" max="100" value="60" step="5">
+                        </div>
+                    </div>
+
+                    <!-- Variable 3: GUI -->
+                    <div class="weight-item">
+                        <div class="weight-header">
+                            <span class="var-name">Índice GUI</span>
+                            <span class="weight-val" id="val-gui">80%</span>
+                        </div>
+                        <span class="var-desc">Identificación de Unidades Geológicas</span>
+                        <div class="slider-row">
+                            <input type="range" id="slider-gui" class="weight-slider" data-var="GUI" min="0" max="100" value="80" step="5">
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
