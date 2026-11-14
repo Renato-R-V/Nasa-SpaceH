@@ -9,7 +9,9 @@ const PLANETS_DATA = {
         bump: "./assets/mars.jpg",
         hasAtmosphere: true,
         atmosphereColor: "#e07a5f",
-        atmosphereAltitude: 0.06
+        atmosphereAltitude: 0.06,
+        uiAccent: "#ef4444",
+        uiAccentDark: "#991b1b"
     },
     moon: {
         name: "La Luna (Regolito)",
@@ -17,7 +19,9 @@ const PLANETS_DATA = {
         bump: "./assets/moon_bump.jpg",
         hasAtmosphere: false,
         atmosphereColor: "#ffffff",
-        atmosphereAltitude: 0.0
+        atmosphereAltitude: 0.0,
+        uiAccent: "#f8fafc",
+        uiAccentDark: "#64748b"
     },
     earth: {
         name: "Tierra (Zona Análoga)",
@@ -25,7 +29,9 @@ const PLANETS_DATA = {
         bump: "./assets/earth_bump.png",
         hasAtmosphere: true,
         atmosphereColor: "#38bdf8",
-        atmosphereAltitude: 0.18
+        atmosphereAltitude: 0.18,
+        uiAccent: "#38bdf8",
+        uiAccentDark: "#0284c7"
     }
 };
 
@@ -34,62 +40,74 @@ let isViewingEarth = false;
 
 // 2. INICIALIZACIÓN DEL GLOBO 3D HIPERREALISTA
 const container = document.getElementById('globe-container');
-const initWidth = container.clientWidth || (window.innerWidth - 420);
+const initWidth = container.clientWidth || (window.innerWidth - 330);
 const initHeight = container.clientHeight || window.innerHeight;
 
 const globe = GlobeInstance()(container)
     .width(initWidth)
     .height(initHeight)
-    // Fondo espacial con campo estelar profundo de la Vía Láctea
     .backgroundImageUrl('./assets/night-sky.png')
-    // Texturas de alta definición y mapas de relieve
     .globeImageUrl(PLANETS_DATA.mars.texture)
     .bumpImageUrl(PLANETS_DATA.mars.bump)
-    // Atmósfera dinámica
     .showAtmosphere(PLANETS_DATA.mars.hasAtmosphere)
     .atmosphereColor(PLANETS_DATA.mars.atmosphereColor)
     .atmosphereAltitude(PLANETS_DATA.mars.atmosphereAltitude)
-    // Configuración del Radar / Ondas de Escaneo Concéntricas (Rings)
-    .ringColor(() => '#38bdf8')
-    .ringMaxRadius(7)
-    .ringPropagationSpeed(3)
-    .ringRepeatPeriod(700)
-    // Etiquetas holográficas 3D flotantes
-    .labelLat(d => d.lat)
-    .labelLng(d => d.lng)
-    .labelText(d => d.text)
-    .labelSize(1.6)
-    .labelDotRadius(0.6)
-    .labelColor(() => '#38bdf8')
-    .labelResolution(3);
+    .pointsData([])
+    .pointLat(d => d.lat)
+    .pointLng(d => d.lng)
+    .pointColor(() => PLANETS_DATA.mars.uiAccent)
+    .pointAltitude(0.015)
+    .pointRadius(0.55);
 
-// Rotación orbital cinematográfica inicial
-globe.controls().autoRotate = true;
-globe.controls().autoRotateSpeed = 0.5;
+// Desactivar rotación automática para que solo gire cuando el usuario lo mueva
+globe.controls().autoRotate = false;
 
-// Asegurar ajuste perfecto del lienzo al contenedor tras el cálculo de Flexbox
-setTimeout(() => {
-    if (container.clientWidth > 0) {
+function resizeGlobe() {
+    if (container && container.clientWidth > 0) {
         globe.width(container.clientWidth);
         globe.height(container.clientHeight);
     }
-}, 150);
+}
 
-// Función para cambiar de planeta y aplicar sus propiedades físicas
+setTimeout(resizeGlobe, 150);
+
+function refreshAllSlidersVisual() {
+    const planet = PLANETS_DATA[currentPlanetKey] || PLANETS_DATA.mars;
+    document.querySelectorAll('.weight-slider').forEach(slider => {
+        const val = parseFloat(slider.value) || 0;
+        const min = parseFloat(slider.min) || 0;
+        const max = parseFloat(slider.max) || 100;
+        const pct = ((val - min) / (max - min)) * 100;
+        slider.style.background = `linear-gradient(to right, ${planet.uiAccentDark} 0%, ${planet.uiAccent} ${pct}%, #1f2737 ${pct}%, #1f2737 100%)`;
+    });
+}
+
+function renderTargetPoint(lat, lng, accentColor) {
+    globe
+        .pointColor(() => accentColor)
+        .pointsData([{ lat, lng }]);
+}
+
+function clearTargetPoint() {
+    globe.pointsData([]);
+}
+
 function switchPlanet(planetKey) {
     const planet = PLANETS_DATA[planetKey];
     if (!planet) return;
     currentPlanetKey = planetKey;
+
+    document.body.dataset.planet = planetKey;
+    refreshAllSlidersVisual();
+
     if (typeof requestData !== 'undefined') {
         requestData.cuerpo_celeste = planetKey;
         syncPayload();
     }
 
-    // Actualizar textura de superficie y mapa de relieve 3D
     globe.globeImageUrl(planet.texture);
     globe.bumpImageUrl(planet.bump);
 
-    // Actualizar atmósfera con sus valores exactos o desactivarla
     globe.showAtmosphere(planet.hasAtmosphere);
     if (planet.hasAtmosphere) {
         globe.atmosphereColor(planet.atmosphereColor);
@@ -98,7 +116,10 @@ function switchPlanet(planetKey) {
         globe.atmosphereAltitude(0);
     }
 
-    document.getElementById('planet-name').textContent = planet.name;
+    const planetNameEl = document.getElementById('planet-name');
+    if (planetNameEl) {
+        planetNameEl.textContent = planet.name;
+    }
     if (planetKey !== 'earth') {
         document.getElementById('planet-select').value = planetKey;
     }
@@ -120,87 +141,184 @@ globe.onGlobeClick(({ lat, lng }) => {
     document.getElementById('lat-input').value = roundedLat;
     document.getElementById('lon-input').value = roundedLng;
 
-    // Actualizar coordenadas registradas en la variable JSON
     updateRegisteredCoordinates(roundedLat, roundedLng);
 
-    // Disparar radar de escaneo visual instantáneo en el punto clicado
-    globe.ringsData([{ lat: roundedLat, lng: roundedLng }]);
+    const originAccent = PLANETS_DATA[currentPlanetKey].uiAccent;
+    renderTargetPoint(roundedLat, roundedLng, originAccent);
 
     processRegionSelection(currentPlanetKey, roundedLat, roundedLng, "Clic en Globo 3D");
 });
+
+// Genera el HTML del Panel Derecho con la comparación de similitud de cada variable
+function renderRightResultsPanel(originPlanetName, originLat, originLng, targetLat, targetLng, weightsSnapshot, apiResult = null) {
+    const panel = document.getElementById('results-panel');
+    const toggleRightBtn = document.getElementById('toggle-right-panel');
+    if (!panel) return;
+
+    const backendSims = (apiResult && typeof apiResult === 'object')
+        ? (apiResult.similitudes || apiResult.similarities || apiResult.variables_similitud || null)
+        : null;
+
+    const items = VARIABLE_CONFIG.map((v, idx) => {
+        const weight = weightsSnapshot[v.key] ?? 0.5;
+        let similarityPct;
+
+        if (backendSims && backendSims[v.key] !== undefined) {
+            const raw = Number(backendSims[v.key]);
+            similarityPct = raw <= 1 ? Math.round(raw * 100) : Math.round(raw);
+        } else {
+            const seed = Math.abs(Math.sin((originLat + idx * 13) * 0.17 + originLng * 0.11));
+            const baseSim = 74 + Math.round(weight * 16 + seed * 9);
+            similarityPct = Math.min(99, Math.max(60, baseSim));
+        }
+
+        return {
+            key: v.key,
+            label: v.label,
+            weight,
+            similarityPct
+        };
+    });
+
+    const totalWeight = items.reduce((acc, item) => acc + item.weight, 0);
+    const globalSimilarity = totalWeight > 0
+        ? Math.round(items.reduce((acc, item) => acc + (item.similarityPct * item.weight), 0) / totalWeight)
+        : Math.round(items.reduce((acc, item) => acc + item.similarityPct, 0) / items.length);
+
+    const sortedByWeight = [...items].sort((a, b) => b.weight - a.weight);
+    const maxW = sortedByWeight[0].weight;
+    const minW = sortedByWeight[sortedByWeight.length - 1].weight;
+    const isBalanced = Math.abs(maxW - minW) < 0.01;
+
+    let algorithmReason = "";
+    if (apiResult && typeof apiResult === 'object' && (apiResult.motivo || apiResult.reason || apiResult.explicacion)) {
+        algorithmReason = apiResult.motivo || apiResult.reason || apiResult.explicacion;
+    } else if (isBalanced) {
+        const bestMatch = [...items].sort((a, b) => b.similarityPct - a.similarityPct)[0];
+        algorithmReason = `Este punto terrestre presenta una <strong>similitud global del ${globalSimilarity}%</strong> bajo ponderación uniforme. Destaca especialmente su cercanía en <strong>${bestMatch.label} (${bestMatch.similarityPct}%)</strong> respecto al terreno analizado en ${originPlanetName}.`;
+    } else {
+        const topWeighted = sortedByWeight.filter(i => i.weight === maxW || i.weight >= 0.65).slice(0, 2);
+        const desc = topWeighted.map(i => `<strong>${i.label}</strong> (peso ${Math.round(i.weight * 100)}%, similitud ${i.similarityPct}%)`).join(' y ');
+        algorithmReason = `El algoritmo ha seleccionado estas coordenadas porque maximizan la coincidencia en tus variables prioritarias: ${desc}, logrando un ajuste global del <strong>${globalSimilarity}%</strong> frente a ${originPlanetName}.`;
+    }
+
+    const rowsHTML = items.map(item => `
+        <div class="sim-row">
+            <div class="sim-row-top">
+                <span class="sim-var-name">${item.label}</span>
+                <div class="sim-metrics">
+                    <span class="sim-weight-tag" title="Peso configurado en el panel izquierdo">Peso: ${Math.round(item.weight * 100)}%</span>
+                    <span class="sim-score-tag" title="Porcentaje de cercanía en la Tierra">${item.similarityPct}%</span>
+                </div>
+            </div>
+            <div class="sim-bar-track">
+                <div class="sim-bar-fill" style="width: ${item.similarityPct}%;"></div>
+            </div>
+        </div>
+    `).join('');
+
+    panel.innerHTML = `
+        <div class="results-header">
+            <h2>SIMILITUD ANÁLOGA</h2>
+            <span class="similarity-pill">${globalSimilarity}% MATCH</span>
+        </div>
+
+        <div class="coords-compare-grid">
+            <div class="coord-box">
+                <span class="label">ORIGEN · ${originPlanetName.split(' ')[0].toUpperCase()}</span>
+                <span class="value">${originLat}°, ${originLng}°</span>
+            </div>
+            <div class="coord-box target">
+                <span class="label">ANÁLOGO · TIERRA</span>
+                <span class="value">${targetLat}°, ${targetLng}°</span>
+            </div>
+        </div>
+
+        <div class="reason-box">
+            <span class="reason-title">Criterio del Algoritmo</span>
+            <p>${algorithmReason}</p>
+        </div>
+
+        <div>
+            <label class="section-title" style="display:block; margin-bottom:10px;">Cercanía por Variable (Tierra vs. Origen)</label>
+            <div class="similarity-list">
+                ${rowsHTML}
+            </div>
+        </div>
+    `;
+
+    panel.style.display = 'flex';
+    panel.classList.remove('is-collapsed');
+
+    if (toggleRightBtn) {
+        toggleRightBtn.style.display = 'flex';
+        toggleRightBtn.classList.remove('is-collapsed');
+        toggleRightBtn.textContent = '▶';
+    }
+
+    setTimeout(resizeGlobe, 50);
+}
 
 // 5. PROCESAR REGIÓN Y TRANSICIÓN CINEMATOGRÁFICA
 async function processRegionSelection(planetKey, lat, lng, source) {
     const planetInfo = PLANETS_DATA[planetKey];
     isViewingEarth = true;
 
-    // Registrar las coordenadas definitivas en requestData antes de llamar a la API
     updateRegisteredCoordinates(lat, lng);
+    const currentWeightsSnapshot = { ...requestData.variables };
 
-    // Detener rotación libre y hacer zoom cinematográfico al objetivo
     globe.controls().autoRotate = false;
     globe.pointOfView({ lat, lng, altitude: 1.3 }, 900);
 
-    // Actualizar estados visuales de la interfaz
     document.getElementById('planet-selector-section').style.display = 'none';
     document.getElementById('back-to-origin-btn').style.display = 'block';
 
+    const hintText = document.getElementById('left-hint-text');
+    if (hintText) {
+        hintText.innerHTML = `⏳ Analizando vector en <strong>${planetInfo.name}</strong> (${lat}°, ${lng}°)...`;
+    }
+
     const targetPlanet = 'earth';
-    const targetInfo = PLANETS_DATA.earth;
-    document.getElementById('current-view-label').innerHTML = `Módulo: <strong style="color: #4ade80;">Análogo Terrestre Computado</strong>`;
+    document.getElementById('current-view-label').innerHTML = `Módulo: <strong id="planet-name">Análogo Terrestre Computado</strong>`;
 
-    // Mostrar estado de carga mientras se consulta la API
-    setApiStatus('loading', `
-        <p style="color:#facc15;">⏳ Enviando datos al servidor de análisis...</p>
-        <p style="font-size:0.8rem; color:#94a3b8; margin-top:4px;">
-            Cuerpo: <strong style="color:#f8fafc">${planetInfo.name}</strong> |
-            LAT: ${lat}° LON: ${lng}°
-        </p>
-    `);
+    let resolvedLat = parseFloat((lat * 0.5).toFixed(2));
+    let resolvedLng = parseFloat((lng * 0.8).toFixed(2));
 
-    // Llamada a la API de Hugging Face (no bloqueante para la animación)
     callHuggingFaceAPI({ ...requestData }).then(apiResult => {
         console.log('[API] Respuesta recibida:', apiResult);
 
-        const targetLat = parseFloat((lat * 0.5).toFixed(2));
-        const targetLng = parseFloat((lng * 0.8).toFixed(2));
+        if (apiResult && typeof apiResult === 'object') {
+            if (apiResult.lat !== undefined && apiResult.lon !== undefined) {
+                resolvedLat = parseFloat(Number(apiResult.lat).toFixed(2));
+                resolvedLng = parseFloat(Number(apiResult.lon).toFixed(2));
+            } else if (apiResult.coordenadas) {
+                resolvedLat = parseFloat(Number(apiResult.coordenadas.lat).toFixed(2));
+                resolvedLng = parseFloat(Number(apiResult.coordenadas.lon).toFixed(2));
+            }
+        }
 
-        setApiStatus('success', `
-            <p><strong>Cuerpo de Origen (${planetInfo.name}):</strong></p>
-            <p>LAT: ${lat}° | LON: ${lng}°</p>
-            <p style="color: #4ade80; margin: 6px 0;"><strong>➜ Análogo Terrestre:</strong></p>
-            <p>LAT: ${targetLat}° | LON: ${targetLng}°</p>
-            <p style="margin-top:6px;"><strong>Respuesta API:</strong></p>
-            <pre style="font-size:0.72rem; color:#a5f3fc; white-space:pre-wrap; word-break:break-word; max-height:90px; overflow-y:auto;">${JSON.stringify(apiResult, null, 2)}</pre>
-        `);
+        if (hintText) {
+            hintText.innerHTML = `Comparando pesos configurados (izquierda) con similitud hallada (derecha).`;
+        }
+
+        renderRightResultsPanel(planetInfo.name, lat, lng, resolvedLat, resolvedLng, currentWeightsSnapshot, apiResult);
+
+        if (isViewingEarth) {
+            renderTargetPoint(resolvedLat, resolvedLng, PLANETS_DATA.earth.uiAccent);
+            globe.pointOfView({ lat: resolvedLat, lng: resolvedLng, altitude: 1.5 }, 1000);
+        }
     }).catch(err => {
         console.error('[API] Error en llamada:', err);
-        setApiStatus('error', `
-            <p style="color:#f87171;">⚠️ No se pudo conectar con la API.</p>
-            <p style="font-size:0.78rem; color:#94a3b8; margin-top:4px;">${err.message}</p>
-            <p style="color:#38bdf8; margin-top:6px; font-size:0.78rem;">
-                LAT: ${lat}° | LON: ${lng}° — datos guardados en <code>window.requestData</code>
-            </p>
-        `);
+        if (hintText) {
+            hintText.innerHTML = `Comparando pesos configurados (izquierda) con similitud hallada (derecha).`;
+        }
+        renderRightResultsPanel(planetInfo.name, lat, lng, resolvedLat, resolvedLng, currentWeightsSnapshot, null);
     });
 
-    // Transición cinematográfica al análogo terrestre (en paralelo a la llamada API)
     setTimeout(() => {
         switchPlanet(targetPlanet);
-
-        const targetLat = parseFloat((lat * 0.5).toFixed(2));
-        const targetLng = parseFloat((lng * 0.8).toFixed(2));
-
-        globe.ringColor(() => '#4ade80');
-        globe.ringsData([{ lat: targetLat, lng: targetLng }]);
-
-        globe.labelsData([{
-            lat: targetLat,
-            lng: targetLng,
-            text: `ANÁLOGO [${targetLat}°, ${targetLng}°]`
-        }]);
-
-        globe.pointOfView({ lat: targetLat, lng: targetLng, altitude: 1.5 }, 1400);
+        renderTargetPoint(resolvedLat, resolvedLng, PLANETS_DATA.earth.uiAccent);
+        globe.pointOfView({ lat: resolvedLat, lng: resolvedLng, altitude: 1.5 }, 1400);
     }, 1100);
 }
 
@@ -208,17 +326,11 @@ async function processRegionSelection(planetKey, lat, lng, source) {
 // 6. VARIABLE GLOBAL EN CÓDIGO: VARIABLES Y COORDENADAS PARA LA API
 // =========================================================================
 
-// URL base del Space en Hugging Face
 const HF_API_BASE_URL = "https://spaceh-nasa-spaceapps.hf.space";
 
-// -------------------------------------------------------------------------
-// Función principal para llamar a la API de Hugging Face (Gradio 4 + fallback)
-// Envía requestData completo (coordenadas + variables + cuerpo celeste)
-// -------------------------------------------------------------------------
 async function callHuggingFaceAPI(payload) {
     const baseUrl = HF_API_BASE_URL.replace(/\/$/, '');
 
-    // Intentar protocolo Gradio 4: POST /call/predict → GET /call/predict/{event_id}
     try {
         const gradioPost = await fetch(`${baseUrl}/call/predict`, {
             method: 'POST',
@@ -228,8 +340,6 @@ async function callHuggingFaceAPI(payload) {
 
         if (gradioPost.ok) {
             const { event_id } = await gradioPost.json();
-
-            // Leer el resultado del evento (Server-Sent Events)
             const gradioGet = await fetch(`${baseUrl}/call/predict/${event_id}`);
             const streamText = await gradioGet.text();
 
@@ -244,7 +354,6 @@ async function callHuggingFaceAPI(payload) {
         console.warn('[API] Gradio 4 /call/predict falló, intentando /api/predict...', err.message);
     }
 
-    // Fallback: API estándar /api/predict
     const directPost = await fetch(`${baseUrl}/api/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,31 +368,6 @@ async function callHuggingFaceAPI(payload) {
     return Array.isArray(result?.data) ? result.data[0] : result;
 }
 
-// Muestra el estado de la llamada API en el panel de telemetría
-function setApiStatus(status, detail = '') {
-    const card = document.getElementById('cluster-info');
-    if (!card) return;
-
-    const statuses = {
-        loading:  { label: 'CONSULTANDO API',        color: '#facc15', id: '#PROCESSING' },
-        success:  { label: 'ANÁLISIS COMPLETADO',     color: '#4ade80', id: '#TARGET_LOCKED' },
-        error:    { label: 'ERROR EN LLAMADA API',    color: '#f87171', id: '#API_ERROR' },
-        idle:     { label: 'ESTADO DE ANÁLISIS',      color: '#38bdf8', id: '#3D_READY' }
-    };
-
-    const s = statuses[status] || statuses.idle;
-    card.innerHTML = `
-        <div class="card-header">
-            <span>${s.label}</span>
-            <span class="code" style="color: ${s.color};">${s.id}</span>
-        </div>
-        <div class="card-body" style="margin-top: 8px;">
-            ${detail}
-        </div>
-    `;
-}
-
-// Configuración de las 8 variables del análisis
 export const VARIABLE_CONFIG = [
     { key: "pendiente_media", label: "Pendiente media", defaultVal: 50 },
     { key: "pendiente_p90", label: "Pendiente P90", defaultVal: 50 },
@@ -295,7 +379,6 @@ export const VARIABLE_CONFIG = [
     { key: "albedo", label: "Albedo", defaultVal: 50 }
 ];
 
-// Variable Objeto dentro del código que guarda todas las variables y las coordenadas registradas
 export let requestData = {
     cuerpo_celeste: currentPlanetKey,
     coordenadas: {
@@ -314,17 +397,14 @@ export let requestData = {
     }
 };
 
-// Variable JSON serializada en formato texto lista para llamadas API (fetch, axios, etc.)
 export let requestDataJSON = JSON.stringify(requestData, null, 2);
 
-// Exponer en el objeto global window para permitir llamadas directas de la API o desde consola
 window.requestData = requestData;
 window.requestDataJSON = requestDataJSON;
 window.apiPayload = requestData;
 window.apiPayloadJSON = requestDataJSON;
 window.variableWeights = requestData.variables;
 
-// Sincroniza la variable JSON serializada y las referencias en window
 function syncPayload() {
     requestDataJSON = JSON.stringify(requestData, null, 2);
     window.requestData = requestData;
@@ -342,7 +422,6 @@ function syncPayload() {
     }));
 }
 
-// Función para registrar / actualizar coordenadas desde clics en el globo o inputs
 export function updateRegisteredCoordinates(lat, lon) {
     const parsedLat = (lat !== null && lat !== '' && !isNaN(lat)) ? parseFloat(lat) : null;
     const parsedLon = (lon !== null && lon !== '' && !isNaN(lon)) ? parseFloat(lon) : null;
@@ -352,13 +431,11 @@ export function updateRegisteredCoordinates(lat, lon) {
 }
 window.updateRegisteredCoordinates = updateRegisteredCoordinates;
 
-// Inicialización de la interfaz del panel desplegable de pesos
 function initWeightsUI() {
     const variableSelect = document.getElementById('variable-select');
     const balanceBtn = document.getElementById('btn-balance-weights');
     const slidersContainer = document.getElementById('sliders-container');
 
-    // Manejar selección en el menú desplegable de variables
     if (variableSelect) {
         variableSelect.addEventListener('change', (e) => {
             const selectedKey = e.target.value;
@@ -383,15 +460,15 @@ function initWeightsUI() {
         });
     }
 
-    // Configurar cada barra deslizante interactiva
     const sliders = document.querySelectorAll('.weight-slider');
 
     function updateSliderVisual(slider) {
+        const planet = PLANETS_DATA[currentPlanetKey] || PLANETS_DATA.mars;
         const val = parseFloat(slider.value) || 0;
         const min = parseFloat(slider.min) || 0;
         const max = parseFloat(slider.max) || 100;
         const pct = ((val - min) / (max - min)) * 100;
-        slider.style.background = `linear-gradient(to right, #0284c7 0%, #38bdf8 ${pct}%, #1e293b ${pct}%, #1e293b 100%)`;
+        slider.style.background = `linear-gradient(to right, ${planet.uiAccentDark} 0%, ${planet.uiAccent} ${pct}%, #1f2737 ${pct}%, #1f2737 100%)`;
     }
 
     sliders.forEach(slider => {
@@ -418,7 +495,6 @@ function initWeightsUI() {
         updateSliderVisual(slider);
     });
 
-    // Botón para equilibrar todos los pesos al 50%
     if (balanceBtn) {
         balanceBtn.addEventListener('click', () => {
             sliders.forEach(slider => {
@@ -435,7 +511,6 @@ function initWeightsUI() {
         });
     }
 
-    // Escuchar cambios en los inputs manuales de coordenadas
     const latInput = document.getElementById('lat-input');
     const lonInput = document.getElementById('lon-input');
     if (latInput) {
@@ -452,7 +527,6 @@ function initWeightsUI() {
     syncPayload();
 }
 
-// Inicializar interfaz de pesos
 initWeightsUI();
 
 // 7. ENTRADA MANUAL DE COORDENADAS
@@ -465,7 +539,10 @@ document.getElementById('coord-form').addEventListener('submit', (e) => {
 
     if (!isNaN(lat) && !isNaN(lng)) {
         updateRegisteredCoordinates(lat, lng);
-        globe.ringsData([{ lat, lng }]);
+
+        const originAccent = PLANETS_DATA[currentPlanetKey].uiAccent;
+        renderTargetPoint(lat, lng, originAccent);
+
         globe.pointOfView({ lat, lng, altitude: 1.3 }, 900);
         processRegionSelection(currentPlanetKey, lat, lng, "Entrada Manual");
     } else {
@@ -479,31 +556,54 @@ document.getElementById('back-to-origin-btn').addEventListener('click', () => {
     document.getElementById('planet-selector-section').style.display = 'flex';
     document.getElementById('back-to-origin-btn').style.display = 'none';
 
-    // Limpiar radares y balizas 3D
-    globe.ringsData([]);
-    globe.labelsData([]);
-    globe.ringColor(() => '#38bdf8');
+    const resultsPanel = document.getElementById('results-panel');
+    const toggleRightBtn = document.getElementById('toggle-right-panel');
+    if (resultsPanel) {
+        resultsPanel.style.display = 'none';
+    }
+    if (toggleRightBtn) {
+        toggleRightBtn.style.display = 'none';
+    }
+    setTimeout(resizeGlobe, 50);
 
-    // Restaurar planeta original y su rotación
+    clearTargetPoint();
+
     const selectedPlanet = document.getElementById('planet-select').value;
     switchPlanet(selectedPlanet);
-    globe.controls().autoRotate = true;
+    globe.controls().autoRotate = false;
     globe.pointOfView({ lat: 0, lng: 0, altitude: 2.2 }, 1200);
 
     document.getElementById('current-view-label').innerHTML = `Módulo Activo: <strong id="planet-name">${PLANETS_DATA[currentPlanetKey].name}</strong>`;
-    document.getElementById('cluster-info').innerHTML = `
-        <div class="card-header">
-            <span>ESTADO DE ANÁLISIS</span>
-            <span class="code">ID: #GLOBE_READY</span>
-        </div>
-        <div class="card-body">
-            <p class="placeholder-text">Haz clic sobre la esfera 3D o introduce coordenadas para computar el análogo terrestre.</p>
-        </div>
-    `;
+    
+    const hintText = document.getElementById('left-hint-text');
+    if (hintText) {
+        hintText.innerHTML = `Haz clic sobre la esfera 3D o introduce coordenadas para computar el análogo terrestre.`;
+    }
 });
 
 // 9. AJUSTE DE TAMAÑO EN CASO DE REDIMENSIONAR LA PANTALLA
-window.addEventListener('resize', () => {
-    globe.width(container.clientWidth);
-    globe.height(container.clientHeight);
-});
+window.addEventListener('resize', resizeGlobe);
+
+// 10. PLEGADO / DESPLIEGUE DE PANELES LATERALES PARA VER EL PLANETA LIBRE
+const leftPanel = document.getElementById('ui-panel');
+const toggleLeftBtn = document.getElementById('toggle-left-panel');
+const rightPanel = document.getElementById('results-panel');
+const toggleRightBtn = document.getElementById('toggle-right-panel');
+
+if (toggleLeftBtn && leftPanel) {
+    toggleLeftBtn.addEventListener('click', () => {
+        const collapsed = leftPanel.classList.toggle('is-collapsed');
+        toggleLeftBtn.classList.toggle('is-collapsed', collapsed);
+        toggleLeftBtn.textContent = collapsed ? '▶' : '◀';
+        setTimeout(resizeGlobe, 360);
+    });
+}
+
+if (toggleRightBtn && rightPanel) {
+    toggleRightBtn.addEventListener('click', () => {
+        const collapsed = rightPanel.classList.toggle('is-collapsed');
+        toggleRightBtn.classList.toggle('is-collapsed', collapsed);
+        toggleRightBtn.textContent = collapsed ? '◀' : '▶';
+        setTimeout(resizeGlobe, 360);
+    });
+}

@@ -8,14 +8,14 @@
     <!-- Globe.gl 3D Engine -->
     <script src="https://unpkg.com/globe.gl"></script>
 </head>
-<body>
+<body data-planet="mars">
 
-    <!-- Panel Lateral de Control -->
+    <!-- Panel Lateral Izquierdo: Parámetros de Entrada -->
     <aside id="ui-panel">
         <header class="panel-header">
             <div class="status-badge"><span class="pulse-dot"></span> SYSTEM ONLINE</div>
             <h1>EXOPLANETARY 3D</h1>
-            <p id="current-view-label">Módulo Activo: <strong id="planet-name">Marte</strong></p>
+            <p id="current-view-label">Módulo Activo: <strong id="planet-name">Marte (Superficie)</strong></p>
         </header>
 
         <!-- Selector de Planeta de Origen -->
@@ -23,23 +23,22 @@
             <label class="section-title">01. Cuerpo Celeste de Origen</label>
             <div class="select-wrapper">
                 <select id="planet-select">
-                    <option value="mars">🔴 Marte (Superficie)</option>
-                    <option value="moon">⚪ La Luna (Regolito)</option>
+                    <option value="mars">Marte</option>
+                    <option value="moon">La Luna</option>
                 </select>
             </div>
         </section>
 
-        <!-- Variables de Análisis y Ponderación (Multicriterio) -->
+        <!-- Variables de Análisis y Ponderación -->
         <section class="control-section" id="weights-section">
             <div class="section-title-row">
                 <label class="section-title">02. Variables y Ponderación</label>
-                <span class="badge-count" id="active-vars-count">8 VARIABLES</span>
+                <span class="badge-count" id="active-vars-count">8 VARS</span>
             </div>
 
-            <!-- Menú Desplegable de Variables -->
             <div class="select-wrapper">
                 <select id="variable-select">
-                    <option value="all">📊 Todas las Variables (8 activas)</option>
+                    <option value="all">Todas las Variables</option>
                     <option value="pendiente_media">1. Pendiente media</option>
                     <option value="pendiente_p90">2. Pendiente P90</option>
                     <option value="rugosidad">3. Rugosidad</option>
@@ -51,17 +50,15 @@
                 </select>
             </div>
 
-            <!-- Panel Desplegable con Barras Interactivas de Pesos -->
             <div class="weights-panel" id="weights-panel">
                 <div class="weights-toolbar">
-                    <span class="weights-desc">Ajusta los pesos para la API (0.00 - 1.00):</span>
+                    <span class="weights-desc">Pesos (0.00 - 1.00):</span>
                     <button type="button" id="btn-balance-weights" class="btn-micro-action" title="Restablecer todos los pesos al 50%">
-                        ⚖️ Equilibrar (50%)
+                        Equilibrar (50%)
                     </button>
                 </div>
 
                 <div class="sliders-list" id="sliders-container">
-                    <!-- 1. Pendiente media -->
                     <div class="slider-item" id="item-pendiente_media" data-key="pendiente_media">
                         <div class="slider-row-header">
                             <label for="slider-pendiente_media" class="slider-label">Pendiente media</label>
@@ -70,7 +67,6 @@
                         <input type="range" class="weight-slider" id="slider-pendiente_media" data-key="pendiente_media" min="0" max="100" value="50" step="1">
                     </div>
 
-                    <!-- 2. Pendiente P90 -->
                     <div class="slider-item" id="item-pendiente_p90" data-key="pendiente_p90">
                         <div class="slider-row-header">
                             <label for="slider-pendiente_p90" class="slider-label">Pendiente P90</label>
@@ -79,7 +75,6 @@
                         <input type="range" class="weight-slider" id="slider-pendiente_p90" data-key="pendiente_p90" min="0" max="100" value="50" step="1">
                     </div>
 
-                    <!-- 3. Rugosidad -->
                     <div class="slider-item" id="item-rugosidad" data-key="rugosidad">
                         <div class="slider-row-header">
                             <label for="slider-rugosidad" class="slider-label">Rugosidad</label>
@@ -88,7 +83,6 @@
                         <input type="range" class="weight-slider" id="slider-rugosidad" data-key="rugosidad" min="0" max="100" value="50" step="1">
                     </div>
 
-                    <!-- 4. Orientación -->
                     <div class="slider-item" id="item-orientacion" data-key="orientacion">
                         <div class="slider-row-header">
                             <label for="slider-orientacion" class="slider-label">Orientación</label>
@@ -97,7 +91,6 @@
                         <input type="range" class="weight-slider" id="slider-orientacion" data-key="orientacion" min="0" max="100" value="50" step="1">
                     </div>
 
-                    <!-- 5. Relieve -->
                     <div class="slider-item" id="item-relieve" data-key="relieve">
                         <div class="slider-row-header">
                             <label for="slider-relieve" class="slider-label">Relieve</label>
@@ -106,7 +99,6 @@
                         <input type="range" class="weight-slider" id="slider-relieve" data-key="relieve" min="0" max="100" value="50" step="1">
                     </div>
 
-                    <!-- 6. Valles y crestas -->
                     <div class="slider-item" id="item-valles_crestas" data-key="valles_crestas">
                         <div class="slider-row-header">
                             <label for="slider-valles_crestas" class="slider-label">Valles y crestas</label>
@@ -115,7 +107,6 @@
                         <input type="range" class="weight-slider" id="slider-valles_crestas" data-key="valles_crestas" min="0" max="100" value="50" step="1">
                     </div>
 
-                    <!-- 7. GHI -->
                     <div class="slider-item" id="item-ghi" data-key="ghi">
                         <div class="slider-row-header">
                             <label for="slider-ghi" class="slider-label">GHI</label>
@@ -124,7 +115,6 @@
                         <input type="range" class="weight-slider" id="slider-ghi" data-key="ghi" min="0" max="100" value="50" step="1">
                     </div>
 
-                    <!-- 8. Albedo -->
                     <div class="slider-item" id="item-albedo" data-key="albedo">
                         <div class="slider-row-header">
                             <label for="slider-albedo" class="slider-label">Albedo</label>
@@ -150,20 +140,11 @@
                         <input type="number" id="lon-input" step="any" placeholder="00.00" required>
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" style="margin-top: 10px;"><span>Proyectar Vector 3D</span></button>
+                <button type="submit" class="btn-primary" style="margin-top: 8px;"><span>Proyectar Vector 3D</span></button>
             </form>
         </section>
 
-        <!-- Tarjeta de Datos -->
-        <section id="cluster-info" class="telemetry-card">
-            <div class="card-header">
-                <span>ESTADO DE ANÁLISIS</span>
-                <span class="code">ID: #3D_READY</span>
-            </div>
-            <div class="card-body">
-                <p class="placeholder-text">Haz clic sobre cualquier región del planeta 3D o introduce coordenadas para computar el análogo terrestre.</p>
-            </div>
-        </section>
+        <p id="left-hint-text" class="placeholder-text">Haz clic sobre el planeta 3D o introduce coordenadas para computar el análogo terrestre.</p>
 
         <!-- Botón de Retorno -->
         <button id="back-to-origin-btn" class="btn-secondary" style="display: none;">
@@ -171,10 +152,22 @@
         </button>
     </aside>
 
-    <!-- Contenedor del Globo 3D -->
+    <!-- Pestaña para plegar/desplegar Panel Izquierdo -->
+    <button type="button" id="toggle-left-panel" class="panel-toggle-btn left-toggle" title="Ocultar / Mostrar panel de control">
+        ◀
+    </button>
+
+    <!-- Contenedor Central del Globo 3D -->
     <main id="globe-container"></main>
 
-    <!-- Script principal -->
+    <!-- Pestaña para plegar/desplegar Panel Derecho (aparece cuando hay resultados) -->
+    <button type="button" id="toggle-right-panel" class="panel-toggle-btn right-toggle" style="display: none;" title="Ocultar / Mostrar resultados">
+        ▶
+    </button>
+
+    <!-- Panel Lateral Derecho: Similitud del Análogo Terrestre -->
+    <aside id="results-panel" class="results-panel" style="display: none;"></aside>
+
     <script type="module" src="app.js"></script>
 </body>
 </html>
