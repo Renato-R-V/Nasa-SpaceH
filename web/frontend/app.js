@@ -208,14 +208,15 @@ async function processRegionSelection(planetKey, lat, lng, source) {
 // 6. VARIABLE GLOBAL EN CÓDIGO: VARIABLES Y COORDENADAS PARA LA API
 // =========================================================================
 
-// URL base del Space en Hugging Face
-const HF_API_BASE_URL = "https://spaceh-nasa-spaceapps.hf.space";
+// URL base del Space en Hugging Face (por el momento: Odiseo24/nasa-pruebas)
+const HF_API_BASE_URL = "https://odiseo24-nasa-pruebas.hf.space";
+const HF_SPACE_URL = "https://odiseo24-nasa-pruebas.hf.space/api/predict";
 
 // -------------------------------------------------------------------------
 // Función principal para llamar a la API de Hugging Face (Gradio 4 + fallback)
 // Envía requestData completo (coordenadas + variables + cuerpo celeste)
 // -------------------------------------------------------------------------
-async function callHuggingFaceAPI(payload) {
+export async function callHuggingFaceAPI(payload) {
     const baseUrl = HF_API_BASE_URL.replace(/\/$/, '');
 
     // Intentar protocolo Gradio 4: POST /call/predict → GET /call/predict/{event_id}
@@ -260,7 +261,7 @@ async function callHuggingFaceAPI(payload) {
 }
 
 // Muestra el estado de la llamada API en el panel de telemetría
-function setApiStatus(status, detail = '') {
+export function setApiStatus(status, detail = '') {
     const card = document.getElementById('cluster-info');
     if (!card) return;
 
@@ -323,6 +324,80 @@ window.requestDataJSON = requestDataJSON;
 window.apiPayload = requestData;
 window.apiPayloadJSON = requestDataJSON;
 window.variableWeights = requestData.variables;
+
+/**
+ * Función que realiza la llamada API al backend de Hugging Face Spaces
+ */
+export async function sendAnalysisToHuggingFace() {
+    const clusterInfo = document.getElementById('cluster-info');
+    const sendBtn = document.getElementById('btn-send-hf');
+    
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span>⏳ Conectando con Hugging Face (ZeroGPU)...</span>';
+    }
+
+    try {
+        console.log("Enviando petición a Hugging Face Space:", HF_SPACE_URL);
+        console.log("Payload:", requestData);
+
+        const response = await fetch(HF_SPACE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                data: [requestData]
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error en el servidor HF (${response.status}): ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        const data = (result && result.data && Array.isArray(result.data)) ? result.data[0] : result;
+        console.log("Respuesta recibida de Hugging Face:", data);
+
+        if (clusterInfo) {
+            clusterInfo.innerHTML = `
+                <div class="card-header">
+                    <span>RESPUESTA DE HUGGING FACE SPACES</span>
+                    <span class="code" style="color: #4ade80;">#CONEXION_EXITOSA (200)</span>
+                </div>
+                <div class="card-body" style="margin-top: 8px;">
+                    <p style="color: #4ade80;"><strong>✅ Servidor:</strong> ${data.servidor || 'Hugging Face ZeroGPU'}</p>
+                    <p><strong>Estado:</strong> ${data.status}</p>
+                    <p><strong>Tiempo de cómputo:</strong> ${data.tiempo_respuesta_ms} ms</p>
+                    <p style="margin-top: 8px; font-size: 0.8rem; color: #38bdf8;"><strong>JSON devuelto por Python:</strong></p>
+                    <pre style="background: #0f172a; padding: 10px; border-radius: 6px; font-size: 0.75rem; color: #38bdf8; overflow-x: auto; max-height: 200px; white-space: pre-wrap; word-break: break-all;">${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+        return data;
+
+    } catch (error) {
+        console.error("Error al conectar con Hugging Face:", error);
+        if (clusterInfo) {
+            clusterInfo.innerHTML = `
+                <div class="card-header">
+                    <span>ERROR DE CONEXIÓN</span>
+                    <span class="code" style="color: #ef4444;">#FALLO_PETICION</span>
+                </div>
+                <div class="card-body" style="margin-top: 8px;">
+                    <p style="color: #ef4444;"><strong>❌ Error:</strong> ${error.message}</p>
+                    <p style="color: #94a3b8; font-size: 0.8rem; margin-top: 6px;">Si el Space estaba inactivo/durmiendo, espera unos 30 segundos a que arranque y vuelve a pulsar el botón.</p>
+                </div>
+            `;
+        }
+    } finally {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<span>🚀 Enviar Variables a Hugging Face</span>';
+        }
+    }
+}
+window.sendAnalysisToHuggingFace = sendAnalysisToHuggingFace;
 
 // Sincroniza la variable JSON serializada y las referencias en window
 function syncPayload() {
@@ -454,6 +529,14 @@ function initWeightsUI() {
 
 // Inicializar interfaz de pesos
 initWeightsUI();
+
+// Evento para el botón de envío al backend de Hugging Face
+const btnSendHF = document.getElementById('btn-send-hf');
+if (btnSendHF) {
+    btnSendHF.addEventListener('click', () => {
+        sendAnalysisToHuggingFace();
+    });
+}
 
 // 7. ENTRADA MANUAL DE COORDENADAS
 document.getElementById('coord-form').addEventListener('submit', (e) => {
