@@ -80,6 +80,10 @@ function switchPlanet(planetKey) {
     const planet = PLANETS_DATA[planetKey];
     if (!planet) return;
     currentPlanetKey = planetKey;
+    if (typeof requestData !== 'undefined') {
+        requestData.cuerpo_celeste = planetKey;
+        syncPayload();
+    }
 
     // Actualizar textura de superficie y mapa de relieve 3D
     globe.globeImageUrl(planet.texture);
@@ -115,6 +119,9 @@ globe.onGlobeClick(({ lat, lng }) => {
 
     document.getElementById('lat-input').value = roundedLat;
     document.getElementById('lon-input').value = roundedLng;
+
+    // Actualizar coordenadas registradas en la variable JSON
+    updateRegisteredCoordinates(roundedLat, roundedLng);
 
     // Disparar radar de escaneo visual instantáneo en el punto clicado
     globe.ringsData([{ lat: roundedLat, lng: roundedLng }]);
@@ -174,12 +181,189 @@ function processRegionSelection(planetKey, lat, lng, source) {
                 <p>LAT: ${targetLat}° | LON: ${targetLng}°</p>
                 <p><strong>Similitud Mineral:</strong> 98.6%</p>
                 <p><strong>Topografía Compatible:</strong> Sí (DEM verificado)</p>
+                <p style="margin-top: 6px; font-size: 0.8rem; color: #38bdf8;"><strong>Pesos JSON aplicados:</strong> 8 variables calibradas</p>
             </div>
         `;
     }, 1100);
 }
 
-// 6. ENTRADA MANUAL DE COORDENADAS
+// =========================================================================
+// 6. VARIABLE GLOBAL EN CÓDIGO: VARIABLES Y COORDENADAS PARA LA API
+// =========================================================================
+
+// Configuración de las 8 variables del análisis
+export const VARIABLE_CONFIG = [
+    { key: "pendiente_media", label: "Pendiente media", defaultVal: 50 },
+    { key: "pendiente_p90", label: "Pendiente P90", defaultVal: 50 },
+    { key: "rugosidad", label: "Rugosidad", defaultVal: 50 },
+    { key: "orientacion", label: "Orientación", defaultVal: 50 },
+    { key: "relieve", label: "Relieve", defaultVal: 50 },
+    { key: "valles_crestas", label: "Valles y crestas", defaultVal: 50 },
+    { key: "ghi", label: "GHI", defaultVal: 50 },
+    { key: "albedo", label: "Albedo", defaultVal: 50 }
+];
+
+// Variable Objeto dentro del código que guarda todas las variables y las coordenadas registradas
+export let requestData = {
+    cuerpo_celeste: currentPlanetKey,
+    coordenadas: {
+        lat: null,
+        lon: null
+    },
+    variables: {
+        pendiente_media: 0.50,
+        pendiente_p90: 0.50,
+        rugosidad: 0.50,
+        orientacion: 0.50,
+        relieve: 0.50,
+        valles_crestas: 0.50,
+        ghi: 0.50,
+        albedo: 0.50
+    }
+};
+
+// Variable JSON serializada en formato texto lista para llamadas API (fetch, axios, etc.)
+export let requestDataJSON = JSON.stringify(requestData, null, 2);
+
+// Exponer en el objeto global window para permitir llamadas directas de la API o desde consola
+window.requestData = requestData;
+window.requestDataJSON = requestDataJSON;
+window.apiPayload = requestData;
+window.apiPayloadJSON = requestDataJSON;
+window.variableWeights = requestData.variables;
+
+// Sincroniza la variable JSON serializada y las referencias en window
+function syncPayload() {
+    requestDataJSON = JSON.stringify(requestData, null, 2);
+    window.requestData = requestData;
+    window.requestDataJSON = requestDataJSON;
+    window.apiPayload = requestData;
+    window.apiPayloadJSON = requestDataJSON;
+    window.variableWeights = requestData.variables;
+    window.variableWeightsJSON = JSON.stringify(requestData.variables, null, 2);
+
+    window.dispatchEvent(new CustomEvent('requestDataUpdate', {
+        detail: {
+            data: requestData,
+            json: requestDataJSON
+        }
+    }));
+}
+
+// Función para registrar / actualizar coordenadas desde clics en el globo o inputs
+export function updateRegisteredCoordinates(lat, lon) {
+    const parsedLat = (lat !== null && lat !== '' && !isNaN(lat)) ? parseFloat(lat) : null;
+    const parsedLon = (lon !== null && lon !== '' && !isNaN(lon)) ? parseFloat(lon) : null;
+    requestData.coordenadas.lat = parsedLat;
+    requestData.coordenadas.lon = parsedLon;
+    syncPayload();
+}
+window.updateRegisteredCoordinates = updateRegisteredCoordinates;
+
+// Inicialización de la interfaz del panel desplegable de pesos
+function initWeightsUI() {
+    const variableSelect = document.getElementById('variable-select');
+    const balanceBtn = document.getElementById('btn-balance-weights');
+    const slidersContainer = document.getElementById('sliders-container');
+
+    // Manejar selección en el menú desplegable de variables
+    if (variableSelect) {
+        variableSelect.addEventListener('change', (e) => {
+            const selectedKey = e.target.value;
+            document.querySelectorAll('.slider-item').forEach(item => {
+                item.classList.remove('is-highlighted');
+            });
+
+            if (selectedKey === 'all') {
+                if (slidersContainer) {
+                    slidersContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            } else {
+                const targetItem = document.getElementById(`item-${selectedKey}`);
+                if (targetItem) {
+                    targetItem.classList.add('is-highlighted');
+                    targetItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    setTimeout(() => {
+                        targetItem.classList.remove('is-highlighted');
+                    }, 2200);
+                }
+            }
+        });
+    }
+
+    // Configurar cada barra deslizante interactiva
+    const sliders = document.querySelectorAll('.weight-slider');
+
+    function updateSliderVisual(slider) {
+        const val = parseFloat(slider.value) || 0;
+        const min = parseFloat(slider.min) || 0;
+        const max = parseFloat(slider.max) || 100;
+        const pct = ((val - min) / (max - min)) * 100;
+        slider.style.background = `linear-gradient(to right, #0284c7 0%, #38bdf8 ${pct}%, #1e293b ${pct}%, #1e293b 100%)`;
+    }
+
+    sliders.forEach(slider => {
+        const key = slider.dataset.key;
+
+        const handleInput = () => {
+            const rawVal = parseFloat(slider.value);
+            const normalized = parseFloat((rawVal / 100).toFixed(2));
+
+            requestData.variables[key] = normalized;
+
+            const badge = document.getElementById(`val-${key}`);
+            if (badge) {
+                badge.textContent = `${normalized.toFixed(2)} (${Math.round(rawVal)}%)`;
+            }
+
+            updateSliderVisual(slider);
+            syncPayload();
+        };
+
+        slider.addEventListener('input', handleInput);
+        slider.addEventListener('change', handleInput);
+
+        updateSliderVisual(slider);
+    });
+
+    // Botón para equilibrar todos los pesos al 50%
+    if (balanceBtn) {
+        balanceBtn.addEventListener('click', () => {
+            sliders.forEach(slider => {
+                slider.value = 50;
+                const key = slider.dataset.key;
+                const badge = document.getElementById(`val-${key}`);
+                if (badge) {
+                    badge.textContent = `0.50 (50%)`;
+                }
+                requestData.variables[key] = 0.50;
+                updateSliderVisual(slider);
+            });
+            syncPayload();
+        });
+    }
+
+    // Escuchar cambios en los inputs manuales de coordenadas
+    const latInput = document.getElementById('lat-input');
+    const lonInput = document.getElementById('lon-input');
+    if (latInput) {
+        latInput.addEventListener('input', () => {
+            updateRegisteredCoordinates(latInput.value, lonInput ? lonInput.value : null);
+        });
+    }
+    if (lonInput) {
+        lonInput.addEventListener('input', () => {
+            updateRegisteredCoordinates(latInput ? latInput.value : null, lonInput.value);
+        });
+    }
+
+    syncPayload();
+}
+
+// Inicializar interfaz de pesos
+initWeightsUI();
+
+// 7. ENTRADA MANUAL DE COORDENADAS
 document.getElementById('coord-form').addEventListener('submit', (e) => {
     e.preventDefault();
     if (isViewingEarth) return;
@@ -188,6 +372,7 @@ document.getElementById('coord-form').addEventListener('submit', (e) => {
     const lng = parseFloat(document.getElementById('lon-input').value);
 
     if (!isNaN(lat) && !isNaN(lng)) {
+        updateRegisteredCoordinates(lat, lng);
         globe.ringsData([{ lat, lng }]);
         globe.pointOfView({ lat, lng, altitude: 1.3 }, 900);
         processRegionSelection(currentPlanetKey, lat, lng, "Entrada Manual");
@@ -196,7 +381,7 @@ document.getElementById('coord-form').addEventListener('submit', (e) => {
     }
 });
 
-// 7. RETORNO AL PLANETA DE ORIGEN
+// 8. RETORNO AL PLANETA DE ORIGEN
 document.getElementById('back-to-origin-btn').addEventListener('click', () => {
     isViewingEarth = false;
     document.getElementById('planet-selector-section').style.display = 'flex';
@@ -225,7 +410,7 @@ document.getElementById('back-to-origin-btn').addEventListener('click', () => {
     `;
 });
 
-// 8. AJUSTE DE TAMAÑO EN CASO DE REDIMENSIONAR LA PANTALLA
+// 9. AJUSTE DE TAMAÑO EN CASO DE REDIMENSIONAR LA PANTALLA
 window.addEventListener('resize', () => {
     globe.width(container.clientWidth);
     globe.height(container.clientHeight);

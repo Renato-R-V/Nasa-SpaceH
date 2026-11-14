@@ -29,15 +29,110 @@
             </div>
         </section>
 
-        <!-- Variables de Análisis -->
-        <section class="control-section">
-            <label class="section-title">02. Variable Espectral</label>
+        <!-- Variables de Análisis y Ponderación (Multicriterio) -->
+        <section class="control-section" id="weights-section">
+            <div class="section-title-row">
+                <label class="section-title">02. Variables y Ponderación</label>
+                <span class="badge-count" id="active-vars-count">8 VARIABLES</span>
+            </div>
+
+            <!-- Menú Desplegable de Variables -->
             <div class="select-wrapper">
                 <select id="variable-select">
-                    <option value="elevation">Elevación y Topografía (DEM)</option>
-                    <option value="minerals">Composición Mineral / Óxidos</option>
-                    <option value="suitability">Idoneidad para Hábitat Base</option>
+                    <option value="all">📊 Todas las Variables (8 activas)</option>
+                    <option value="pendiente_media">1. Pendiente media</option>
+                    <option value="pendiente_p90">2. Pendiente P90</option>
+                    <option value="rugosidad">3. Rugosidad</option>
+                    <option value="orientacion">4. Orientación</option>
+                    <option value="relieve">5. Relieve</option>
+                    <option value="valles_crestas">6. Valles y crestas</option>
+                    <option value="ghi">7. GHI</option>
+                    <option value="albedo">8. Albedo</option>
                 </select>
+            </div>
+
+            <!-- Panel Desplegable con Barras Interactivas de Pesos -->
+            <div class="weights-panel" id="weights-panel">
+                <div class="weights-toolbar">
+                    <span class="weights-desc">Ajusta los pesos para la API (0.00 - 1.00):</span>
+                    <button type="button" id="btn-balance-weights" class="btn-micro-action" title="Restablecer todos los pesos al 50%">
+                        ⚖️ Equilibrar (50%)
+                    </button>
+                </div>
+
+                <div class="sliders-list" id="sliders-container">
+                    <!-- 1. Pendiente media -->
+                    <div class="slider-item" id="item-pendiente_media" data-key="pendiente_media">
+                        <div class="slider-row-header">
+                            <label for="slider-pendiente_media" class="slider-label">Pendiente media</label>
+                            <span class="slider-val-badge" id="val-pendiente_media">0.50 (50%)</span>
+                        </div>
+                        <input type="range" class="weight-slider" id="slider-pendiente_media" data-key="pendiente_media" min="0" max="100" value="50" step="1">
+                    </div>
+
+                    <!-- 2. Pendiente P90 -->
+                    <div class="slider-item" id="item-pendiente_p90" data-key="pendiente_p90">
+                        <div class="slider-row-header">
+                            <label for="slider-pendiente_p90" class="slider-label">Pendiente P90</label>
+                            <span class="slider-val-badge" id="val-pendiente_p90">0.50 (50%)</span>
+                        </div>
+                        <input type="range" class="weight-slider" id="slider-pendiente_p90" data-key="pendiente_p90" min="0" max="100" value="50" step="1">
+                    </div>
+
+                    <!-- 3. Rugosidad -->
+                    <div class="slider-item" id="item-rugosidad" data-key="rugosidad">
+                        <div class="slider-row-header">
+                            <label for="slider-rugosidad" class="slider-label">Rugosidad</label>
+                            <span class="slider-val-badge" id="val-rugosidad">0.50 (50%)</span>
+                        </div>
+                        <input type="range" class="weight-slider" id="slider-rugosidad" data-key="rugosidad" min="0" max="100" value="50" step="1">
+                    </div>
+
+                    <!-- 4. Orientación -->
+                    <div class="slider-item" id="item-orientacion" data-key="orientacion">
+                        <div class="slider-row-header">
+                            <label for="slider-orientacion" class="slider-label">Orientación</label>
+                            <span class="slider-val-badge" id="val-orientacion">0.50 (50%)</span>
+                        </div>
+                        <input type="range" class="weight-slider" id="slider-orientacion" data-key="orientacion" min="0" max="100" value="50" step="1">
+                    </div>
+
+                    <!-- 5. Relieve -->
+                    <div class="slider-item" id="item-relieve" data-key="relieve">
+                        <div class="slider-row-header">
+                            <label for="slider-relieve" class="slider-label">Relieve</label>
+                            <span class="slider-val-badge" id="val-relieve">0.50 (50%)</span>
+                        </div>
+                        <input type="range" class="weight-slider" id="slider-relieve" data-key="relieve" min="0" max="100" value="50" step="1">
+                    </div>
+
+                    <!-- 6. Valles y crestas -->
+                    <div class="slider-item" id="item-valles_crestas" data-key="valles_crestas">
+                        <div class="slider-row-header">
+                            <label for="slider-valles_crestas" class="slider-label">Valles y crestas</label>
+                            <span class="slider-val-badge" id="val-valles_crestas">0.50 (50%)</span>
+                        </div>
+                        <input type="range" class="weight-slider" id="slider-valles_crestas" data-key="valles_crestas" min="0" max="100" value="50" step="1">
+                    </div>
+
+                    <!-- 7. GHI -->
+                    <div class="slider-item" id="item-ghi" data-key="ghi">
+                        <div class="slider-row-header">
+                            <label for="slider-ghi" class="slider-label">GHI</label>
+                            <span class="slider-val-badge" id="val-ghi">0.50 (50%)</span>
+                        </div>
+                        <input type="range" class="weight-slider" id="slider-ghi" data-key="ghi" min="0" max="100" value="50" step="1">
+                    </div>
+
+                    <!-- 8. Albedo -->
+                    <div class="slider-item" id="item-albedo" data-key="albedo">
+                        <div class="slider-row-header">
+                            <label for="slider-albedo" class="slider-label">Albedo</label>
+                            <span class="slider-val-badge" id="val-albedo">0.50 (50%)</span>
+                        </div>
+                        <input type="range" class="weight-slider" id="slider-albedo" data-key="albedo" min="0" max="100" value="50" step="1">
+                    </div>
+                </div>
             </div>
         </section>
 
