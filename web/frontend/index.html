@@ -3,24 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AERO-SPACE // Analogue GIS Explorer</title>
+    <title>AERO-SPACE // 3D Exoplanetary Explorer</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Globe.gl 3D Engine -->
+    <script src="https://unpkg.com/globe.gl"></script>
 </head>
 <body>
 
-    <!-- Panel Lateral Estilo Sala de Control -->
+    <!-- Panel Lateral de Control -->
     <aside id="ui-panel">
         <header class="panel-header">
-            <div class="status-badge">
-                <span class="pulse-dot"></span> TELEMETRY ACTIVE
-            </div>
-            <h1>EXOPLANETARY GIS</h1>
+            <div class="status-badge"><span class="pulse-dot"></span> SYSTEM ONLINE</div>
+            <h1>EXOPLANETARY 3D</h1>
             <p id="current-view-label">Módulo Activo: <strong id="planet-name">Marte</strong></p>
         </header>
 
-        <!-- Selector de Cuerpo Celeste -->
+        <!-- Selector de Planeta de Origen -->
         <section class="control-section" id="planet-selector-section">
             <label class="section-title">01. Cuerpo Celeste de Origen</label>
             <div class="select-wrapper">
@@ -43,7 +41,7 @@
             </div>
         </section>
 
-        <!-- Búsqueda Manual de Coordenadas -->
+        <!-- Inserción de Coordenadas -->
         <section class="control-section">
             <label class="section-title">03. Inserción de Coordenadas</label>
             <form id="coord-form" class="coord-form">
@@ -57,32 +55,30 @@
                         <input type="number" id="lon-input" step="any" placeholder="00.00" required>
                     </div>
                 </div>
-                <button type="submit" class="btn-primary"><span>Ejecutar Vector</span></button>
+                <button type="submit" class="btn-primary" style="margin-top: 10px;"><span>Proyectar Vector 3D</span></button>
             </form>
         </section>
 
-        <!-- Tarjeta de Datos del Clúster -->
+        <!-- Tarjeta de Datos -->
         <section id="cluster-info" class="telemetry-card">
             <div class="card-header">
-                <span>ESTADO DE ANALISIS</span>
-                <span class="code">ID: #SYS_IDLE</span>
+                <span>ESTADO DE ANÁLISIS</span>
+                <span class="code">ID: #3D_READY</span>
             </div>
             <div class="card-body">
-                <p class="placeholder-text">Haz clic en cualquier sector del mapa o introduce coordenadas para computar el análogo terrestre.</p>
+                <p class="placeholder-text">Haz clic sobre cualquier región del planeta 3D o introduce coordenadas para computar el análogo terrestre.</p>
             </div>
         </section>
 
         <!-- Botón de Retorno -->
         <button id="back-to-origin-btn" class="btn-secondary" style="display: none;">
-            <span>↩ Retornar a Órbita de Origen</span>
+            <span>↩ Retornar a Órbitas de Origen</span>
         </button>
     </aside>
 
-    <!-- Contenedor del Mapa -->
-    <main id="map"></main>
+    <!-- Contenedor del Globo 3D -->
+    <main id="globe-container"></main>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Script principal -->
     <script type="module" src="app.js"></script>
 </body>
