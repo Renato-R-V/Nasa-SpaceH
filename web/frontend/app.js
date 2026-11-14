@@ -130,9 +130,12 @@ globe.onGlobeClick(({ lat, lng }) => {
 });
 
 // 5. PROCESAR REGIÓN Y TRANSICIÓN CINEMATOGRÁFICA
-function processRegionSelection(planetKey, lat, lng, source) {
+async function processRegionSelection(planetKey, lat, lng, source) {
     const planetInfo = PLANETS_DATA[planetKey];
     isViewingEarth = true;
+
+    // Registrar las coordenadas definitivas en requestData antes de llamar a la API
+    updateRegisteredCoordinates(lat, lng);
 
     // Detener rotación libre y hacer zoom cinematográfico al objetivo
     globe.controls().autoRotate = false;
@@ -146,50 +149,139 @@ function processRegionSelection(planetKey, lat, lng, source) {
     const targetInfo = PLANETS_DATA.earth;
     document.getElementById('current-view-label').innerHTML = `Módulo: <strong style="color: #4ade80;">Análogo Terrestre Computado</strong>`;
 
-    // Transición calculada al cuerpo análogo
-    setTimeout(() => {
-        switchPlanet(targetPlanet);
+    // Mostrar estado de carga mientras se consulta la API
+    setApiStatus('loading', `
+        <p style="color:#facc15;">⏳ Enviando datos al servidor de análisis...</p>
+        <p style="font-size:0.8rem; color:#94a3b8; margin-top:4px;">
+            Cuerpo: <strong style="color:#f8fafc">${planetInfo.name}</strong> |
+            LAT: ${lat}° LON: ${lng}°
+        </p>
+    `);
 
-        // Cálculo de coordenadas homólogas
+    // Llamada a la API de Hugging Face (no bloqueante para la animación)
+    callHuggingFaceAPI({ ...requestData }).then(apiResult => {
+        console.log('[API] Respuesta recibida:', apiResult);
+
         const targetLat = parseFloat((lat * 0.5).toFixed(2));
         const targetLng = parseFloat((lng * 0.8).toFixed(2));
 
-        // Anillo de radar pulsante (verde esmeralda)
+        setApiStatus('success', `
+            <p><strong>Cuerpo de Origen (${planetInfo.name}):</strong></p>
+            <p>LAT: ${lat}° | LON: ${lng}°</p>
+            <p style="color: #4ade80; margin: 6px 0;"><strong>➜ Análogo Terrestre:</strong></p>
+            <p>LAT: ${targetLat}° | LON: ${targetLng}°</p>
+            <p style="margin-top:6px;"><strong>Respuesta API:</strong></p>
+            <pre style="font-size:0.72rem; color:#a5f3fc; white-space:pre-wrap; word-break:break-word; max-height:90px; overflow-y:auto;">${JSON.stringify(apiResult, null, 2)}</pre>
+        `);
+    }).catch(err => {
+        console.error('[API] Error en llamada:', err);
+        setApiStatus('error', `
+            <p style="color:#f87171;">⚠️ No se pudo conectar con la API.</p>
+            <p style="font-size:0.78rem; color:#94a3b8; margin-top:4px;">${err.message}</p>
+            <p style="color:#38bdf8; margin-top:6px; font-size:0.78rem;">
+                LAT: ${lat}° | LON: ${lng}° — datos guardados en <code>window.requestData</code>
+            </p>
+        `);
+    });
+
+    // Transición cinematográfica al análogo terrestre (en paralelo a la llamada API)
+    setTimeout(() => {
+        switchPlanet(targetPlanet);
+
+        const targetLat = parseFloat((lat * 0.5).toFixed(2));
+        const targetLng = parseFloat((lng * 0.8).toFixed(2));
+
         globe.ringColor(() => '#4ade80');
         globe.ringsData([{ lat: targetLat, lng: targetLng }]);
 
-        // Baliza holográfica flotante 3D
         globe.labelsData([{
             lat: targetLat,
             lng: targetLng,
             text: `ANÁLOGO [${targetLat}°, ${targetLng}°]`
         }]);
 
-        // Cámara orbital enfoca el análogo
         globe.pointOfView({ lat: targetLat, lng: targetLng, altitude: 1.5 }, 1400);
-
-        // Actualizar panel de telemetría con métricas de misión
-        document.getElementById('cluster-info').innerHTML = `
-            <div class="card-header">
-                <span>ANÁLISIS ESPECTRAL COMPLETADO</span>
-                <span class="code" style="color: #4ade80;">#TARGET_LOCKED</span>
-            </div>
-            <div class="card-body" style="margin-top: 8px;">
-                <p><strong>Cuerpo de Origen (${planetInfo.name}):</strong></p>
-                <p>LAT: ${lat}° | LON: ${lng}°</p>
-                <p style="color: #4ade80; margin: 6px 0;"><strong>➜ Coincidencia Análoga (${targetInfo.name}):</strong></p>
-                <p>LAT: ${targetLat}° | LON: ${targetLng}°</p>
-                <p><strong>Similitud Mineral:</strong> 98.6%</p>
-                <p><strong>Topografía Compatible:</strong> Sí (DEM verificado)</p>
-                <p style="margin-top: 6px; font-size: 0.8rem; color: #38bdf8;"><strong>Pesos JSON aplicados:</strong> 8 variables calibradas</p>
-            </div>
-        `;
     }, 1100);
 }
 
 // =========================================================================
 // 6. VARIABLE GLOBAL EN CÓDIGO: VARIABLES Y COORDENADAS PARA LA API
 // =========================================================================
+
+// URL base del Space en Hugging Face
+const HF_API_BASE_URL = "https://spaceh-nasa-spaceapps.hf.space";
+
+// -------------------------------------------------------------------------
+// Función principal para llamar a la API de Hugging Face (Gradio 4 + fallback)
+// Envía requestData completo (coordenadas + variables + cuerpo celeste)
+// -------------------------------------------------------------------------
+async function callHuggingFaceAPI(payload) {
+    const baseUrl = HF_API_BASE_URL.replace(/\/$/, '');
+
+    // Intentar protocolo Gradio 4: POST /call/predict → GET /call/predict/{event_id}
+    try {
+        const gradioPost = await fetch(`${baseUrl}/call/predict`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: [payload] })
+        });
+
+        if (gradioPost.ok) {
+            const { event_id } = await gradioPost.json();
+
+            // Leer el resultado del evento (Server-Sent Events)
+            const gradioGet = await fetch(`${baseUrl}/call/predict/${event_id}`);
+            const streamText = await gradioGet.text();
+
+            const dataLine = streamText.split('\n').find(l => l.startsWith('data: '));
+            if (dataLine) {
+                const rawPayload = JSON.parse(dataLine.replace('data: ', ''));
+                return Array.isArray(rawPayload) ? rawPayload[0] : rawPayload;
+            }
+            return { raw: streamText };
+        }
+    } catch (err) {
+        console.warn('[API] Gradio 4 /call/predict falló, intentando /api/predict...', err.message);
+    }
+
+    // Fallback: API estándar /api/predict
+    const directPost = await fetch(`${baseUrl}/api/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: [payload] })
+    });
+
+    if (!directPost.ok) {
+        throw new Error(`HTTP ${directPost.status}: ${directPost.statusText}`);
+    }
+
+    const result = await directPost.json();
+    return Array.isArray(result?.data) ? result.data[0] : result;
+}
+
+// Muestra el estado de la llamada API en el panel de telemetría
+function setApiStatus(status, detail = '') {
+    const card = document.getElementById('cluster-info');
+    if (!card) return;
+
+    const statuses = {
+        loading:  { label: 'CONSULTANDO API',        color: '#facc15', id: '#PROCESSING' },
+        success:  { label: 'ANÁLISIS COMPLETADO',     color: '#4ade80', id: '#TARGET_LOCKED' },
+        error:    { label: 'ERROR EN LLAMADA API',    color: '#f87171', id: '#API_ERROR' },
+        idle:     { label: 'ESTADO DE ANÁLISIS',      color: '#38bdf8', id: '#3D_READY' }
+    };
+
+    const s = statuses[status] || statuses.idle;
+    card.innerHTML = `
+        <div class="card-header">
+            <span>${s.label}</span>
+            <span class="code" style="color: ${s.color};">${s.id}</span>
+        </div>
+        <div class="card-body" style="margin-top: 8px;">
+            ${detail}
+        </div>
+    `;
+}
 
 // Configuración de las 8 variables del análisis
 export const VARIABLE_CONFIG = [
