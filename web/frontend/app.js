@@ -326,6 +326,7 @@ async function processRegionSelection(planetKey, lat, lng, source) {
 // 6. VARIABLE GLOBAL EN CÓDIGO: VARIABLES Y COORDENADAS PARA LA API
 // =========================================================================
 
+// URL base del Space en Hugging Face
 const HF_API_BASE_URL = "https://spaceh-nasa-spaceapps.hf.space";
 
 async function callHuggingFaceAPI(payload) {
