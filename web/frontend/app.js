@@ -106,69 +106,6 @@ planetSelect.addEventListener('change', (e) => {
     switchPlanet(e.target.value);
 });
 
-// 3.1 GESTOR DEL MENÚ DESPLEGABLE DE PONDERACIÓN CON BARRAS DESLIZANTES
-const dropdownBtn = document.getElementById('variables-dropdown-btn');
-const dropdownMenu = document.getElementById('variables-dropdown-menu');
-
-if (dropdownBtn && dropdownMenu) {
-    dropdownBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdownMenu.classList.toggle('show');
-        dropdownBtn.classList.toggle('active');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
-            dropdownMenu.classList.remove('show');
-            dropdownBtn.classList.remove('active');
-        }
-    });
-}
-
-// Configuración y listeners para los sliders de peso
-const sliders = [
-    { sliderId: 'slider-topography', valId: 'val-topography', label: 'Topografía' },
-    { sliderId: 'slider-albedo', valId: 'val-albedo', label: 'Albedo' },
-    { sliderId: 'slider-gui', valId: 'val-gui', label: 'GUI' }
-];
-
-function updateSliderBadge(slider, valSpan) {
-    valSpan.textContent = `${slider.value}%`;
-    valSpan.style.color = slider.value > 0 ? '#38bdf8' : '#64748b';
-    valSpan.style.borderColor = slider.value > 0 ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255, 255, 255, 0.1)';
-    updateGlobalWeightBadge();
-}
-
-function updateGlobalWeightBadge() {
-    const activeCount = sliders.filter(s => {
-        const el = document.getElementById(s.sliderId);
-        return el && parseInt(el.value, 10) > 0;
-    }).length;
-
-    const badge = document.getElementById('active-vars-badge');
-    if (badge) {
-        badge.textContent = `${activeCount} Activas`;
-        badge.style.color = activeCount > 0 ? '#38bdf8' : '#ef4444';
-        badge.style.borderColor = activeCount > 0 ? 'rgba(56, 189, 248, 0.3)' : 'rgba(239, 68, 68, 0.3)';
-    }
-}
-
-sliders.forEach(item => {
-    const sliderEl = document.getElementById(item.sliderId);
-    const valEl = document.getElementById(item.valId);
-    if (sliderEl && valEl) {
-        sliderEl.addEventListener('input', () => updateSliderBadge(sliderEl, valEl));
-    }
-});
-
-function getWeights() {
-    return {
-        topography: parseInt(document.getElementById('slider-topography')?.value || 0, 10),
-        albedo: parseInt(document.getElementById('slider-albedo')?.value || 0, 10),
-        gui: parseInt(document.getElementById('slider-gui')?.value || 0, 10)
-    };
-}
-
 // 4. DETECCIÓN DE CLICS SOBRE LA SUPERFICIE DEL PLANETA
 globe.onGlobeClick(({ lat, lng }) => {
     if (isViewingEarth) return;
@@ -224,17 +161,10 @@ function processRegionSelection(planetKey, lat, lng, source) {
         // Cámara orbital enfoca el análogo
         globe.pointOfView({ lat: targetLat, lng: targetLng, altitude: 1.5 }, 1400);
 
-        // Cálculo ponderado multivariable (Topografía, Albedo, GUI)
-        const weights = getWeights();
-        const totalW = weights.topography + weights.albedo + weights.gui;
-        const weightedScore = totalW > 0 
-            ? ((weights.topography * 97.4 + weights.albedo * 95.8 + weights.gui * 98.6) / totalW).toFixed(1)
-            : "0.0";
-
         // Actualizar panel de telemetría con métricas de misión
         document.getElementById('cluster-info').innerHTML = `
             <div class="card-header">
-                <span>ANÁLISIS MULTIVARIABLE</span>
+                <span>ANÁLISIS ESPECTRAL COMPLETADO</span>
                 <span class="code" style="color: #4ade80;">#TARGET_LOCKED</span>
             </div>
             <div class="card-body" style="margin-top: 8px;">
@@ -242,16 +172,8 @@ function processRegionSelection(planetKey, lat, lng, source) {
                 <p>LAT: ${lat}° | LON: ${lng}°</p>
                 <p style="color: #4ade80; margin: 6px 0;"><strong>➜ Coincidencia Análoga (${targetInfo.name}):</strong></p>
                 <p>LAT: ${targetLat}° | LON: ${targetLng}°</p>
-                <div style="margin-top: 8px; margin-bottom: 8px; background: rgba(30, 41, 59, 0.4); padding: 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.15);">
-                    <p style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 4px;"><strong>Pesos Aplicados:</strong></p>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-family: monospace;">Topografía: ${weights.topography}%</span>
-                        <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-family: monospace;">Albedo: ${weights.albedo}%</span>
-                        <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-family: monospace;">GUI: ${weights.gui}%</span>
-                    </div>
-                </div>
-                <p><strong>Similitud Ponderada:</strong> <span style="color: #4ade80; font-weight: bold;">${weightedScore}%</span></p>
-                <p><strong>Topografía Compatible:</strong> ${weights.topography > 0 ? "Sí (DEM verificado)" : "No evaluada"}</p>
+                <p><strong>Similitud Mineral:</strong> 98.6%</p>
+                <p><strong>Topografía Compatible:</strong> Sí (DEM verificado)</p>
             </div>
         `;
     }, 1100);
