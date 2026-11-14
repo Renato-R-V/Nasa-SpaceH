@@ -3,53 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explorador Planetario 2D</title>
+    <title>AERO-SPACE // Analogue GIS Explorer</title>
     <link rel="stylesheet" href="style.css">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 </head>
 <body>
 
-    <!-- Panel Lateral de Control y Datos (Ocupa todo el alto) -->
+    <!-- Panel Lateral Estilo Sala de Control -->
     <aside id="ui-panel">
-        <header>
-            <h1>Explorador 2D</h1>
-            <p id="current-planet-label">Planeta Activo: <strong>Marte</strong></p>
+        <header class="panel-header">
+            <div class="status-badge">
+                <span class="pulse-dot"></span> TELEMETRY ACTIVE
+            </div>
+            <h1>EXOPLANETARY GIS</h1>
+            <p id="current-view-label">Módulo Activo: <strong id="planet-name">Marte</strong></p>
         </header>
 
-        <section class="controls-group">
-            <h3>Variables de Filtrado</h3>
-            <label for="variable-select">Seleccionar Variable:</label>
-            <select id="variable-select">
-                <option value="elevation">Elevación y Topografía</option>
-                <option value="minerals">Composición Mineral</option>
-                <option value="suitability">Idoneidad para Base</option>
-            </select>
+        <!-- Selector de Cuerpo Celeste -->
+        <section class="control-section" id="planet-selector-section">
+            <label class="section-title">01. Cuerpo Celeste de Origen</label>
+            <div class="select-wrapper">
+                <select id="planet-select">
+                    <option value="mars">🔴 Marte (Superficie)</option>
+                    <option value="moon">⚪ La Luna (Regolito)</option>
+                </select>
+            </div>
         </section>
 
-        <!-- Nueva sección: Búsqueda Manual de Coordenadas -->
-        <section class="controls-group">
-            <h3>Búsqueda Manual</h3>
+        <!-- Variables de Análisis -->
+        <section class="control-section">
+            <label class="section-title">02. Variable Espectral</label>
+            <div class="select-wrapper">
+                <select id="variable-select">
+                    <option value="elevation">Elevación y Topografía (DEM)</option>
+                    <option value="minerals">Composición Mineral / Óxidos</option>
+                    <option value="suitability">Idoneidad para Hábitat Base</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Búsqueda Manual de Coordenadas -->
+        <section class="control-section">
+            <label class="section-title">03. Inserción de Coordenadas</label>
             <form id="coord-form" class="coord-form">
-                <div class="input-row">
-                    <label for="lat-input">Lat:</label>
-                    <input type="number" id="lat-input" step="any" placeholder="Ej: 15.5" required>
+                <div class="input-grid">
+                    <div class="input-field">
+                        <label for="lat-input">LAT</label>
+                        <input type="number" id="lat-input" step="any" placeholder="00.00" required>
+                    </div>
+                    <div class="input-field">
+                        <label for="lon-input">LON</label>
+                        <input type="number" id="lon-input" step="any" placeholder="00.00" required>
+                    </div>
                 </div>
-                <div class="input-row">
-                    <label for="lon-input">Lon:</label>
-                    <input type="number" id="lon-input" step="any" placeholder="Ej: -45.0" required>
-                </div>
-                <button type="submit" class="btn-primary">Consultar Coordenada</button>
+                <button type="submit" class="btn-primary"><span>Ejecutar Vector</span></button>
             </form>
         </section>
 
-        <section id="cluster-info" class="card">
-            <h3>Información del Clúster</h3>
-            <p class="placeholder-text">Haz clic en el mapa o introduce coordenadas manuales para analizar la región.</p>
+        <!-- Tarjeta de Datos del Clúster -->
+        <section id="cluster-info" class="telemetry-card">
+            <div class="card-header">
+                <span>ESTADO DE ANALISIS</span>
+                <span class="code">ID: #SYS_IDLE</span>
+            </div>
+            <div class="card-body">
+                <p class="placeholder-text">Haz clic en cualquier sector del mapa o introduce coordenadas para computar el análogo terrestre.</p>
+            </div>
         </section>
+
+        <!-- Botón de Retorno -->
+        <button id="back-to-origin-btn" class="btn-secondary" style="display: none;">
+            <span>↩ Retornar a Órbita de Origen</span>
+        </button>
     </aside>
 
-    <!-- Contenedor del Mapa 2D -->
+    <!-- Contenedor del Mapa -->
     <main id="map"></main>
 
     <!-- Leaflet JS -->
