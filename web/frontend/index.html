@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador Planetario 2D</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body>
+
+    <!-- Panel Lateral de Control y Datos (Ocupa todo el alto) -->
+    <aside id="ui-panel">
+        <header>
+            <h1>Explorador 2D</h1>
+            <p id="current-planet-label">Planeta Activo: <strong>Marte</strong></p>
+        </header>
+
+        <section class="controls-group">
+            <h3>Variables de Filtrado</h3>
+            <label for="variable-select">Seleccionar Variable:</label>
+            <select id="variable-select">
+                <option value="elevation">Elevación y Topografía</option>
+                <option value="minerals">Composición Mineral</option>
+                <option value="suitability">Idoneidad para Base</option>
+            </select>
+        </section>
+
+        <!-- Nueva sección: Búsqueda Manual de Coordenadas -->
+        <section class="controls-group">
+            <h3>Búsqueda Manual</h3>
+            <form id="coord-form" class="coord-form">
+                <div class="input-row">
+                    <label for="lat-input">Lat:</label>
+                    <input type="number" id="lat-input" step="any" placeholder="Ej: 15.5" required>
+                </div>
+                <div class="input-row">
+                    <label for="lon-input">Lon:</label>
+                    <input type="number" id="lon-input" step="any" placeholder="Ej: -45.0" required>
+                </div>
+                <button type="submit" class="btn-primary">Consultar Coordenada</button>
+            </form>
+        </section>
+
+        <section id="cluster-info" class="card">
+            <h3>Información del Clúster</h3>
+            <p class="placeholder-text">Haz clic en el mapa o introduce coordenadas manuales para analizar la región.</p>
+        </section>
+    </aside>
+
+    <!-- Contenedor del Mapa 2D -->
+    <main id="map"></main>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Script principal -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
