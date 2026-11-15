@@ -88,12 +88,6 @@ function renderTargetPoint(lat, lng, accentColor) {
         .pointsData([{ lat, lng }]);
 }
 
-function renderMultiplePoints(points, accentColor) {
-    globe
-        .pointColor(() => accentColor)
-        .pointsData(points);
-}
-
 function clearTargetPoint() {
     globe.pointsData([]);
 }
@@ -167,7 +161,7 @@ function renderRightResultsPanel(originPlanetName, originLat, originLng, targetL
             activeAnalogsData = apiResult.candidatos.map((c, idx) => ({
                 lat: parseFloat(Number(c.latitud !== undefined ? c.latitud : (c.lat || 0)).toFixed(2)),
                 lng: parseFloat(Number(c.longitud !== undefined ? c.longitud : (c.lon || c.lng || 0)).toFixed(2)),
-                similarity: c.similitud !== undefined ? Math.round(c.similitud) : (c.similarity !== undefined ? Math.round(c.similarity) : Math.round(Math.max(65, 100 - (Number(c.distancia || 0.1) * 12)))),
+                similarity: c.similarity !== undefined ? Math.round(c.similarity) : (c.similitud !== undefined ? Math.round(c.similitud) : Math.round(Math.max(65, 100 - (Number(c.distancia || 0.1) * 12)))),
                 variablesSim: c.variablesSim || (c.normalizadas ? c.normalizadas.map(v => Math.round(Math.min(99, Math.max(50, 100 - Math.abs(Number(v)) * 25)))) : null),
                 region: c.ubicacion || `Candidato #${c.rango || (idx + 1)}${c.cluster !== undefined ? ` (Cluster ${c.cluster})` : ''}`,
                 distancia: c.distancia !== undefined ? Number(c.distancia).toFixed(4) : undefined,
@@ -309,6 +303,7 @@ function setupAnalogsAccordion() {
                 const targetAnalogue = activeAnalogsData[index];
                 if (!targetAnalogue) return;
 
+                renderTargetPoint(targetAnalogue.lat, targetAnalogue.lng, PLANETS_DATA.earth.uiAccent);
                 globe.pointOfView({ lat: targetAnalogue.lat, lng: targetAnalogue.lng, altitude: 1.4 }, 1200);
             });
         }
@@ -321,6 +316,8 @@ async function processRegionSelection(planetKey, lat, lng, source) {
     isViewingEarth = false;
 
     updateRegisteredCoordinates(lat, lng);
+    requestData.cuerpo_celeste = planetKey;
+    syncPayload();
     const currentWeightsSnapshot = { ...requestData.variables };
 
     globe.controls().autoRotate = false;
@@ -334,7 +331,7 @@ async function processRegionSelection(planetKey, lat, lng, source) {
         hintText.innerHTML = `⏳ Computing terrestrial analogs on backend for <strong>${planetInfo.name}</strong> (${lat}°, ${lng}°)...`;
     }
 
-    callHuggingFaceAPI({ ...requestData }).then(apiResult => {
+    callHuggingFaceAPI({ ...requestData, cuerpo_celeste: planetKey }).then(apiResult => {
         console.log('[API] Response received:', apiResult);
 
         let resolvedLat = 0;
@@ -365,10 +362,7 @@ async function processRegionSelection(planetKey, lat, lng, source) {
         renderRightResultsPanel(planetInfo.name, lat, lng, resolvedLat, resolvedLng, currentWeightsSnapshot, apiResult);
 
         const firstPoint = (activeAnalogsData && activeAnalogsData[0]) || { lat: resolvedLat, lng: resolvedLng };
-        const allPoints = (activeAnalogsData && activeAnalogsData.length > 0)
-            ? activeAnalogsData.map(a => ({ lat: a.lat, lng: a.lng }))
-            : [firstPoint];
-        renderMultiplePoints(allPoints, PLANETS_DATA.earth.uiAccent);
+        renderTargetPoint(firstPoint.lat, firstPoint.lng, PLANETS_DATA.earth.uiAccent);
         globe.pointOfView({ lat: firstPoint.lat, lng: firstPoint.lng, altitude: 1.5 }, 1200);
     }).catch(err => {
         console.error('[API] Call error:', err);
@@ -400,7 +394,15 @@ async function callHuggingFaceAPI(payload) {
             const gradioGet = await fetch(`${baseUrl}/call/predict/${event_id}`);
             const streamText = await gradioGet.text();
 
-            const dataLine = streamText.split('\n').find(l => l.startsWith('data: '));
+            const lines = streamText.split('\n');
+            let dataLine = null;
+            for (let i = lines.length - 1; i >= 0; i--) {
+                const line = lines[i].trim();
+                if (line.startsWith('data: ')) {
+                    dataLine = line;
+                    break;
+                }
+            }
             if (dataLine) {
                 const rawPayload = JSON.parse(dataLine.replace('data: ', ''));
                 return Array.isArray(rawPayload) ? rawPayload[0] : rawPayload;
