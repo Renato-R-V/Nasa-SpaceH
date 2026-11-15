@@ -1,0 +1,2 @@
+-r ../../analogos/requirements.txt
+threadpoolctl>=3.6,<4
