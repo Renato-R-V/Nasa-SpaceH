@@ -608,3 +608,135 @@ if (toggleRightBtn && rightPanel) {
         setTimeout(resizeGlobe, 360);
     });
 }
+
+// =========================================================================
+// 11. TOOLTIPS / CUADROS DE INFORMACIÓN DE CADA VARIABLE
+// =========================================================================
+
+// EDITA AQUÍ LA INFORMACIÓN DE CADA VARIABLE:
+const VARIABLE_INFO = {
+    pendiente_media: {
+        title: "Pendiente Media",
+        description: "Inclinación promedio del terreno en grados (°). Evalúa la estabilidad para aterrizaje y movilidad de vehículos."
+    },
+    pendiente_p90: {
+        title: "Pendiente P90",
+        description: "Percentil 90 de la pendiente. Identifica las zonas más escarpadas o de mayor riesgo topográfico."
+    },
+    rugosidad: {
+        title: "Rugosidad",
+        description: "Irregularidad micro-topográfica de la superficie (presencia de rocas, cráteres menores o escombros)."
+    },
+    orientacion: {
+        title: "Orientación (Aspect)",
+        description: "Dirección cardinal hacia la que apunta la ladera (0° - 360°). Influye en la captación solar y sombra térmica."
+    },
+    relieve: {
+        title: "Relieve Local",
+        description: "Amplitud altitudinal (diferencia entre cota máxima y mínima) dentro de la celda de análisis."
+    },
+    valles_crestas: {
+        title: "Valles y Crestas (TPI)",
+        description: "Índice de Posición Topográfica que diferencia depresiones/cauces frente a crestas o elevaciones."
+    },
+    ghi: {
+        title: "GHI (Irradiancia Global Horizontal)",
+        description: "Energía solar total incidente por unidad de superficie. Clave para generación fotovoltaica."
+    },
+    albedo: {
+        title: "Albedo Superficial",
+        description: "Proporción de radiación solar reflejada por el suelo (0 a 1). Relacionado con composición y balance térmico."
+    }
+};
+
+function initInfoTooltips() {
+    const tooltip = document.getElementById('var-tooltip');
+    const tooltipTitle = document.getElementById('var-tooltip-title');
+    const tooltipBody = document.getElementById('var-tooltip-body');
+    const infoButtons = document.querySelectorAll('.info-btn');
+
+    if (!tooltip || !tooltipTitle || !tooltipBody) return;
+
+    let activeBtn = null;
+
+    function closeTooltip() {
+        tooltip.classList.remove('visible');
+        tooltip.setAttribute('aria-hidden', 'true');
+        if (activeBtn) {
+            activeBtn.classList.remove('active');
+            activeBtn = null;
+        }
+    }
+
+    function openTooltip(btn) {
+        const key = btn.getAttribute('data-info-key');
+        const info = VARIABLE_INFO[key];
+        if (!info) return;
+
+        // Aplicar color dinámico del planeta actual (Marte, Luna o Tierra)
+        const planet = PLANETS_DATA[currentPlanetKey] || PLANETS_DATA.mars;
+        tooltip.style.borderColor = planet.uiAccent;
+        tooltipTitle.style.color = planet.uiAccent;
+
+        // Rellenar contenido
+        tooltipTitle.textContent = info.title;
+        tooltipBody.innerHTML = info.description;
+
+        // Posicionar justo a la derecha del panel izquierdo (flotando sobre el 3D)
+        const rect = btn.getBoundingClientRect();
+        const tooltipWidth = 270;
+        let left = rect.right + 16;
+        let top = rect.top - 12;
+
+        // Si en pantallas pequeñas se sale por la derecha, ajustarlo debajo
+        if (left + tooltipWidth > window.innerWidth - 12) {
+            left = Math.max(12, rect.left - tooltipWidth / 2);
+            top = rect.bottom + 8;
+        }
+
+        // Evitar que se salga por la parte inferior de la ventana
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+        tooltip.classList.add('visible');
+        tooltip.setAttribute('aria-hidden', 'false');
+
+        const tipRect = tooltip.getBoundingClientRect();
+        if (tipRect.bottom > window.innerHeight - 12) {
+            tooltip.style.top = `${Math.max(12, window.innerHeight - tipRect.height - 12)}px`;
+        }
+
+        if (activeBtn) activeBtn.classList.remove('active');
+        btn.classList.add('active');
+        activeBtn = btn;
+    }
+
+    infoButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (activeBtn === btn) {
+                closeTooltip();
+            } else {
+                openTooltip(btn);
+            }
+        });
+    });
+
+    // Cerrar al hacer clic fuera, pulsar Escape o hacer scroll
+    document.addEventListener('click', (e) => {
+        if (!tooltip.contains(e.target) && !e.target.closest('.info-btn')) {
+            closeTooltip();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeTooltip();
+    });
+
+    const slidersContainer = document.getElementById('sliders-container');
+    if (slidersContainer) {
+        slidersContainer.addEventListener('scroll', closeTooltip);
+    }
+}
+
+initInfoTooltips();
