@@ -14,7 +14,7 @@
     --left-panel-width: 330px;
     --right-panel-width: 360px;
 
-    /* Tema por defecto: Marte */
+    /* Default Theme: Mars */
     --theme-accent: #EF4444;
     --theme-accent-light: #FCA5A5;
     --theme-accent-dark: #991B1B;
@@ -67,7 +67,7 @@ body, html {
     position: relative;
 }
 
-/* Panel Lateral Izquierdo */
+/* Left Sidebar Panel */
 #ui-panel {
     width: var(--left-panel-width);
     min-width: var(--left-panel-width);
@@ -94,7 +94,7 @@ body, html {
     pointer-events: none;
 }
 
-/* Pestañas flotantes para abrir/cerrar paneles */
+/* Floating Tabs to Collapse/Expand Panels */
 .panel-toggle-btn {
     position: fixed;
     top: 50%;
@@ -263,7 +263,7 @@ select:focus, input:focus {
     line-height: 1.4;
 }
 
-/* Contenedor Central del Globo 3D */
+/* Central 3D Globe Container */
 #globe-container {
     flex: 1;
     min-width: 0;
@@ -273,7 +273,7 @@ select:focus, input:focus {
     overflow: hidden;
 }
 
-/* Panel de Variables y Ponderación */
+/* Variables & Weighting Panel */
 .section-title-row {
     display: flex;
     justify-content: space-between;
@@ -403,7 +403,7 @@ select:focus, input:focus {
 }
 
 /* =========================================================================
-   PANEL DERECHO Y ACORDEÓN (Sin cortes ni scroll anidado)
+   RIGHT PANEL & ACCORDION (No clipping or nested scroll)
    ========================================================================= */
 
 .results-panel {
@@ -417,11 +417,11 @@ select:focus, input:focus {
     background: var(--bg-panel);
     backdrop-filter: blur(20px);
     border-left: 1px solid var(--border-subtle);
-    padding: 20px 18px 160px 18px; /* Padding inferior amplio para visualizar cómodamente el #10 */
+    padding: 20px 18px 160px 18px;
     display: flex;
     flex-direction: column;
     gap: 14px;
-    overflow-y: auto; /* Scroll global fluido para todo el panel */
+    overflow-y: auto;
     box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7);
     transition: margin-right 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease;
 }
@@ -587,7 +587,7 @@ select:focus, input:focus {
 }
 
 /* =========================================================================
-   BOTÓN ⓘ Y TOOLTIP FLOTANTE DE VARIABLE
+   INFO BUTTON ⓘ & FLOATING VARIABLE TOOLTIP
    ========================================================================= */
 
 .slider-label-group {
@@ -669,8 +669,8 @@ select:focus, input:focus {
 }
 
 /* =========================================================================
-   ESTILOS PARA EL ACORDEÓN DE LOS 10 ANÁLOGOS
-   ======================================================================== */
+   TOP 10 ANALOGS ACCORDION STYLES
+   ========================================================================= */
 
 .analogue-accordion-list {
     display: flex;

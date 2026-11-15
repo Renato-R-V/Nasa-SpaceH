@@ -1,10 +1,10 @@
-// Inicializar Globe.gl desde el script global o ESM
+// Initialize Globe.gl from global script or ESM
 const GlobeInstance = window.Globe;
 
-// 1. CONFIGURACIÓN DE CUERPOS CELESTES CON TEXTURAS HD, MAPAS DE RELIEVE (BUMP) Y ATMÓSFERAS
+// 1. CELESTIAL BODIES CONFIGURATION WITH HD TEXTURES, BUMP MAPS & ATMOSPHERES
 const PLANETS_DATA = {
     mars: {
-        name: "Marte (Superficie)",
+        name: "Mars (Surface)",
         texture: "./assets/mars.jpg",
         bump: "./assets/mars.jpg",
         hasAtmosphere: true,
@@ -14,7 +14,7 @@ const PLANETS_DATA = {
         uiAccentDark: "#991b1b"
     },
     moon: {
-        name: "La Luna (Regolito)",
+        name: "The Moon (Regolith)",
         texture: "./assets/moon.jpg",
         bump: "./assets/moon_bump.jpg",
         hasAtmosphere: false,
@@ -24,7 +24,7 @@ const PLANETS_DATA = {
         uiAccentDark: "#64748b"
     },
     earth: {
-        name: "Tierra (Zona Análoga)",
+        name: "Earth (Analog Zone)",
         texture: "./assets/earth.jpg",
         bump: "./assets/earth_bump.png",
         hasAtmosphere: true,
@@ -39,7 +39,7 @@ let currentPlanetKey = "mars";
 let isViewingEarth = false;
 let activeAnalogsData = [];
 
-// 2. INICIALIZACIÓN DEL GLOBO 3D HIPERREALISTA
+// 2. HYPERREALISTIC 3D GLOBE INITIALIZATION
 const container = document.getElementById('globe-container');
 const initWidth = container.clientWidth || (window.innerWidth - 360);
 const initHeight = container.clientHeight || window.innerHeight;
@@ -144,11 +144,11 @@ globe.onGlobeClick(({ lat, lng }) => {
     const originAccent = PLANETS_DATA[currentPlanetKey].uiAccent;
     renderTargetPoint(roundedLat, roundedLng, originAccent);
 
-    processRegionSelection(currentPlanetKey, roundedLat, roundedLng, "Clic en Globo 3D");
+    processRegionSelection(currentPlanetKey, roundedLat, roundedLng, "3D Globe Click");
 });
 
 // =========================================================================
-// RENDERIZADO DEL PANEL DERECHO CON LOS 10 ANÁLOGOS DESPLEGABLES
+// RIGHT PANEL RENDERING WITH 10 EXPANDABLE ANALOGS
 // =========================================================================
 
 function renderRightResultsPanel(originPlanetName, originLat, originLng, targetLat, targetLng, weightsSnapshot, apiResult = null) {
@@ -176,10 +176,12 @@ function renderRightResultsPanel(originPlanetName, originLat, originLng, targetL
                 lng: parseFloat(Math.min(180, Math.max(-180, targetLng + lngOffset)).toFixed(2)),
                 similarity: Math.round(sim),
                 variablesSim: varsSim,
-                region: `Zona Análoga ${i + 1}`
+                region: `Analog Zone ${i + 1}`
             });
         }
     }
+
+    const originShortName = originPlanetName.replace(/^The\s+/i, '').split(' ')[0].toUpperCase();
 
     const analogsHTML = activeAnalogsData.map((alt, index) => {
         const items = VARIABLE_CONFIG.map((v, idx) => {
@@ -197,7 +199,7 @@ function renderRightResultsPanel(originPlanetName, originLat, originLng, targetL
                 <div class="sim-row-top">
                     <span class="sim-var-name">${item.label}</span>
                     <div class="sim-metrics">
-                        <span class="sim-weight-tag">Peso: ${Math.round(item.weight * 100)}%</span>
+                        <span class="sim-weight-tag">Weight: ${Math.round(item.weight * 100)}%</span>
                         <span class="sim-score-tag">${item.similarityPct}%</span>
                     </div>
                 </div>
@@ -212,18 +214,18 @@ function renderRightResultsPanel(originPlanetName, originLat, originLng, targetL
         return `
             <div class="analogue-dropdown-item ${isOpenClass}" data-index="${index}">
                 <div class="analogue-dropdown-header">
-                    <span class="analogue-rank">#${index + 1} ${index === 0 ? '(Principal)' : ''}</span>
+                    <span class="analogue-rank">#${index + 1} ${index === 0 ? '(Primary)' : ''}</span>
                     <span class="analogue-coords">${alt.lat}°, ${alt.lng}°</span>
                     <span class="analogue-pill-small">${alt.similarity}% MATCH</span>
                 </div>
                 <div class="analogue-dropdown-body">
                     <div class="coords-compare-grid" style="margin-bottom: 8px;">
                         <div class="coord-box">
-                            <span class="label">ORIGEN · ${originPlanetName.split(' ')[0].toUpperCase()}</span>
+                            <span class="label">ORIGIN · ${originShortName}</span>
                             <span class="value">${originLat}°, ${originLng}°</span>
                         </div>
                         <div class="coord-box target">
-                            <span class="label">ANÁLOGO #${index + 1}</span>
+                            <span class="label">ANALOG #${index + 1}</span>
                             <span class="value">${alt.lat}°, ${alt.lng}°</span>
                         </div>
                     </div>
@@ -231,7 +233,7 @@ function renderRightResultsPanel(originPlanetName, originLat, originLng, targetL
                         ${rowsHTML}
                     </div>
                     <button type="button" class="btn-fly-to" data-index="${index}">
-                        Centrar y Explorar en el Globo 3D
+                        Center & Explore on 3D Globe
                     </button>
                 </div>
             </div>
@@ -240,13 +242,13 @@ function renderRightResultsPanel(originPlanetName, originLat, originLng, targetL
 
     panel.innerHTML = `
         <div class="results-header">
-            <h2>TOP 10 ANÁLOGOS</h2>
-            <span class="similarity-pill">Tierra</span>
+            <h2>TOP 10 ANALOGS</h2>
+            <span class="similarity-pill">Earth</span>
         </div>
 
         <div class="reason-box">
-            <span class="reason-title">Panel de Resultados</span>
-            <p>Haz clic en cualquiera de los 10 puntos para ver sus estadísticas completas y centrar el globo 3D.</p>
+            <span class="reason-title">Results Panel</span>
+            <p>Click on any of the 10 points to view its full statistics and center the 3D globe.</p>
         </div>
 
         <div class="analogue-accordion-list" style="margin-top: 10px;">
@@ -296,7 +298,7 @@ function setupAnalogsAccordion() {
     });
 }
 
-// 5. PROCESAR REGIÓN Y TRANSICIÓN CINEMATOGRÁFICA
+// 5. PROCESS REGION & CINEMATIC TRANSITION
 async function processRegionSelection(planetKey, lat, lng, source) {
     const planetInfo = PLANETS_DATA[planetKey];
     isViewingEarth = true;
@@ -312,17 +314,17 @@ async function processRegionSelection(planetKey, lat, lng, source) {
 
     const hintText = document.getElementById('left-hint-text');
     if (hintText) {
-        hintText.innerHTML = `⏳ Analizando vector en <strong>${planetInfo.name}</strong> (${lat}°, ${lng}°)...`;
+        hintText.innerHTML = `⏳ Analyzing vector on <strong>${planetInfo.name}</strong> (${lat}°, ${lng}°)...`;
     }
 
     const targetPlanet = 'earth';
-    document.getElementById('current-view-label').innerHTML = `Módulo: <strong id="planet-name">Análogo Terrestre Computado</strong>`;
+    document.getElementById('current-view-label').innerHTML = `Module: <strong id="planet-name">Computed Terrestrial Analog</strong>`;
 
     let resolvedLat = parseFloat((lat * 0.5).toFixed(2));
     let resolvedLng = parseFloat((lng * 0.8).toFixed(2));
 
     callHuggingFaceAPI({ ...requestData }).then(apiResult => {
-        console.log('[API] Respuesta recibida:', apiResult);
+        console.log('[API] Response received:', apiResult);
 
         if (apiResult && typeof apiResult === 'object') {
             if (apiResult.lat !== undefined && apiResult.lon !== undefined) {
@@ -335,7 +337,7 @@ async function processRegionSelection(planetKey, lat, lng, source) {
         }
 
         if (hintText) {
-            hintText.innerHTML = `Comparando pesos configurados (izquierda) con similitud hallada (derecha).`;
+            hintText.innerHTML = `Comparing configured weights (left) with computed similarity (right).`;
         }
 
         renderRightResultsPanel(planetInfo.name, lat, lng, resolvedLat, resolvedLng, currentWeightsSnapshot, apiResult);
@@ -346,9 +348,9 @@ async function processRegionSelection(planetKey, lat, lng, source) {
             globe.pointOfView({ lat: firstPoint.lat, lng: firstPoint.lng, altitude: 1.5 }, 1000);
         }
     }).catch(err => {
-        console.error('[API] Error en llamada:', err);
+        console.error('[API] Call error:', err);
         if (hintText) {
-            hintText.innerHTML = `Comparando pesos configurados (izquierda) con similitud hallada (derecha).`;
+            hintText.innerHTML = `Comparing configured weights (left) with computed similarity (right).`;
         }
         renderRightResultsPanel(planetInfo.name, lat, lng, resolvedLat, resolvedLng, currentWeightsSnapshot, null);
     });
@@ -362,7 +364,7 @@ async function processRegionSelection(planetKey, lat, lng, source) {
 }
 
 // =========================================================================
-// 6. VARIABLE GLOBAL EN CÓDIGO: VARIABLES Y COORDENADAS PARA LA API
+// 6. GLOBAL PAYLOAD VARIABLE: VARIABLES AND COORDINATES FOR THE API
 // =========================================================================
 
 const HF_API_BASE_URL = "https://spaceh-nasa-spaceapps.hf.space";
@@ -390,7 +392,7 @@ async function callHuggingFaceAPI(payload) {
             return { raw: streamText };
         }
     } catch (err) {
-        console.warn('[API] Gradio 4 /call/predict falló, intentando /api/predict...', err.message);
+        console.warn('[API] Gradio 4 /call/predict failed, trying /api/predict...', err.message);
     }
 
     const directPost = await fetch(`${baseUrl}/api/predict`, {
@@ -408,7 +410,7 @@ async function callHuggingFaceAPI(payload) {
 }
 
 export const VARIABLE_CONFIG = [
-    { key: "relieve", label: "Relieve", defaultVal: 50 },
+    { key: "relieve", label: "Relief", defaultVal: 50 },
     { key: "ghi", label: "GHI", defaultVal: 50 },
     { key: "albedo", label: "Albedo", defaultVal: 50 }
 ];
@@ -572,9 +574,9 @@ document.getElementById('coord-form').addEventListener('submit', (e) => {
         renderTargetPoint(lat, lng, originAccent);
 
         globe.pointOfView({ lat, lng, altitude: 1.3 }, 900);
-        processRegionSelection(currentPlanetKey, lat, lng, "Entrada Manual");
+        processRegionSelection(currentPlanetKey, lat, lng, "Manual Input");
     } else {
-        alert("Introduce coordenadas numéricas válidas.");
+        alert("Please enter valid numeric coordinates.");
     }
 });
 
@@ -600,11 +602,11 @@ document.getElementById('back-to-origin-btn').addEventListener('click', () => {
     globe.controls().autoRotate = false;
     globe.pointOfView({ lat: 0, lng: 0, altitude: 2.2 }, 1200);
 
-    document.getElementById('current-view-label').innerHTML = `Módulo Activo: <strong id="planet-name">${PLANETS_DATA[currentPlanetKey].name}</strong>`;
+    document.getElementById('current-view-label').innerHTML = `Active Module: <strong id="planet-name">${PLANETS_DATA[currentPlanetKey].name}</strong>`;
     
     const hintText = document.getElementById('left-hint-text');
     if (hintText) {
-        hintText.innerHTML = `Haz clic sobre la esfera 3D o introduce coordenadas para computar el análogo terrestre.`;
+        hintText.innerHTML = `Click on the 3D sphere or enter coordinates to compute the terrestrial analog.`;
     }
 });
 
@@ -639,16 +641,16 @@ if (toggleRightBtn && rightPanel) {
 
 const variableInfoData = {
     relieve: {
-        title: "Relieve",
-        body: "Desviación estándar de las elevaciones dentro de un radio regional, que mide la amplitud y variación vertical del terreno."
+        title: "Relief",
+        body: "Standard deviation of elevations within a regional radius, measuring the vertical amplitude and variation of the terrain."
     },
     ghi: {
-        title: "GHI (Irradiancia)",
-        body: "Estimación de la energía e insolación directa que recibe la superficie por unidad de área, influenciada por la latitud, la pendiente y la orientación."
+        title: "GHI (Irradiance)",
+        body: "Estimate of the direct solar energy and insolation received by the surface per unit area, influenced by latitude, slope, and aspect."
     },
     albedo: {
         title: "Albedo",
-        body: "Proporción de luz solar que la superficie refleja directamente al espacio en comparación con la que absorbe."
+        body: "Proportion of incident sunlight that the surface reflects directly back into space compared to what it absorbs."
     }
 };
 
