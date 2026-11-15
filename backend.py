@@ -404,16 +404,33 @@ def ejecutar_busqueda_exacta(cuerpo: str, latitud: float, longitud: float, pesos
         cand["lon"] = cand["longitud"]
         cand["lng"] = cand["longitud"]
         cand["ubicacion"] = cand["nombre"]
+        cand["similarity"] = round(sim)
         cand["grado_analogia_pct"] = round(sim, 1)
-        cand["similitud"] = cand["grado_analogia_pct"]
+        cand["similitud"] = round(sim)
+        cand["verosimilitud"] = f"{verosimilitud:.1f}"
         cand["verosimilitud_pct"] = round(verosimilitud, 1)
+        cand["similitudTopo"] = f"{sim_topo:.1f}"
         cand["similitud_topo_pct"] = round(sim_topo, 1)
+        cand["wasserstein"] = f"{w1:.1f}"
         cand["wasserstein_w1"] = round(w1, 1)
+        cand["entropia"] = f"{entropia:.2f}"
         cand["entropia_pe_h1"] = round(entropia, 2)
+        cand["dz"] = f"{dz:.3f}"
         cand["d_z_original"] = round(dz, 3)
-        cand["distancia"] = cand["d_z_original"]
+        cand["distancia"] = round(dz, 3)
+        cand["albedoA"] = f"{cand['albedo_A']:.3f}"
+        cand["qSolar"] = f"{cand['q_solar']:.1f}"
+        cand["relieveH"] = f"{cand['relieve_H_m']:.1f}"
+        cand["concordancia"] = concordancia
         cand["concordancia_topologica"] = concordancia
+        cand["movilidad"] = movilidad
         cand["movilidad_rover"] = movilidad
+
+        norm_rel = min(99, max(50, round(100 - min(1.0, abs(dh)) * 40)))
+        norm_ghi = min(99, max(50, round(100 - min(1.0, abs(dq)) * 40)))
+        norm_alb = min(99, max(50, round(100 - min(1.0, abs(da)) * 40)))
+        cand["variablesSim"] = [norm_rel, norm_ghi, norm_alb]
+        cand["region"] = cand["ubicacion"]
 
         candidatos_procesados.append(cand)
 
@@ -427,6 +444,7 @@ def ejecutar_busqueda_exacta(cuerpo: str, latitud: float, longitud: float, pesos
     return {
         "objetivo": f"Ubicación de {cuerpo.capitalize()} ({latitud}°, {longitud}°) → 10 análogos terrestres clasificados",
         "regimen_geologico": perfil["tipo"],
+        "profile": perfil,
         "k": 10,
         "consulta": {
             "cuerpo_celeste": cuerpo,
@@ -435,9 +453,11 @@ def ejecutar_busqueda_exacta(cuerpo: str, latitud: float, longitud: float, pesos
             "perfil_terreno": perfil
         },
         "candidatos": top10,
+        "top10": top10,
+        "analogos": top10,
         "lat": top10[0]["latitud"],
         "lon": top10[0]["longitud"],
-        "analogos": top10,
+        "lng": top10[0]["longitud"],
         "busqueda": {
             "motor": "knn_topologico_avanzado_dinamico",
             "k": 10,
@@ -465,8 +485,10 @@ def endpoint_procesar_variables(json_input: Any) -> Dict[str, Any]:
     cuerpo = "moon" if ("luna" in cuerpo_raw or "moon" in cuerpo_raw) else "mars"
 
     coords = payload.get("coordenadas", {}) or {}
-    lat = float(coords.get("lat") or 0.0)
-    lon = float(coords.get("lon") or 0.0)
+    lat_val = coords.get("lat") if coords.get("lat") is not None else coords.get("latitud", 0.0)
+    lon_val = coords.get("lon") if coords.get("lon") is not None else (coords.get("lng") if coords.get("lng") is not None else coords.get("longitud", 0.0))
+    lat = float(lat_val or 0.0)
+    lon = float(lon_val or 0.0)
 
     vars_in = payload.get("variables", {}) or {}
     w_albedo = float(vars_in.get("albedo", 1.0))
