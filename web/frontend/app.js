@@ -367,7 +367,7 @@ async function processRegionSelection(planetKey, lat, lng, source) {
 // 6. GLOBAL PAYLOAD VARIABLE: VARIABLES AND COORDINATES FOR THE API
 // =========================================================================
 
-const HF_API_BASE_URL = "https://spaceh-nasa-spaceapps.hf.space";
+const HF_API_BASE_URL = "https://saragonzalezrodriguez-spaceh-space.hf.space";
 
 async function callHuggingFaceAPI(payload) {
     const baseUrl = HF_API_BASE_URL.replace(/\/$/, '');
