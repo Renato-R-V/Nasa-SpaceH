@@ -311,7 +311,7 @@ function setupAnalogsAccordion() {
 // 5. PROCESS REGION & CINEMATIC TRANSITION
 async function processRegionSelection(planetKey, lat, lng, source) {
     const planetInfo = PLANETS_DATA[planetKey];
-    isViewingEarth = true;
+    isViewingEarth = false;
 
     updateRegisteredCoordinates(lat, lng);
     const currentWeightsSnapshot = { ...requestData.variables };
@@ -324,17 +324,14 @@ async function processRegionSelection(planetKey, lat, lng, source) {
 
     const hintText = document.getElementById('left-hint-text');
     if (hintText) {
-        hintText.innerHTML = `⏳ Analyzing vector on <strong>${planetInfo.name}</strong> (${lat}°, ${lng}°)...`;
+        hintText.innerHTML = `⏳ Computing terrestrial analogs on backend for <strong>${planetInfo.name}</strong> (${lat}°, ${lng}°)...`;
     }
-
-    const targetPlanet = 'earth';
-    document.getElementById('current-view-label').innerHTML = `Module: <strong id="planet-name">Computed Terrestrial Analog</strong>`;
-
-    let resolvedLat = parseFloat((lat * 0.5).toFixed(2));
-    let resolvedLng = parseFloat((lng * 0.8).toFixed(2));
 
     callHuggingFaceAPI({ ...requestData }).then(apiResult => {
         console.log('[API] Response received:', apiResult);
+
+        let resolvedLat = 0;
+        let resolvedLng = 0;
 
         if (apiResult && typeof apiResult === 'object') {
             if (apiResult.candidatos && Array.isArray(apiResult.candidatos) && apiResult.candidatos.length > 0) {
@@ -350,31 +347,26 @@ async function processRegionSelection(planetKey, lat, lng, source) {
             }
         }
 
+        isViewingEarth = true;
+        switchPlanet('earth');
+        document.getElementById('current-view-label').innerHTML = `Module: <strong id="planet-name">Computed Terrestrial Analog</strong>`;
+
         if (hintText) {
             hintText.innerHTML = `Comparing configured weights (left) with computed similarity (right).`;
         }
 
         renderRightResultsPanel(planetInfo.name, lat, lng, resolvedLat, resolvedLng, currentWeightsSnapshot, apiResult);
 
-        if (isViewingEarth) {
-            const firstPoint = activeAnalogsData[0] || { lat: resolvedLat, lng: resolvedLng };
-            renderTargetPoint(firstPoint.lat, firstPoint.lng, PLANETS_DATA.earth.uiAccent);
-            globe.pointOfView({ lat: firstPoint.lat, lng: firstPoint.lng, altitude: 1.5 }, 1000);
-        }
+        const firstPoint = (activeAnalogsData && activeAnalogsData[0]) || { lat: resolvedLat, lng: resolvedLng };
+        renderTargetPoint(firstPoint.lat, firstPoint.lng, PLANETS_DATA.earth.uiAccent);
+        globe.pointOfView({ lat: firstPoint.lat, lng: firstPoint.lng, altitude: 1.5 }, 1200);
     }).catch(err => {
         console.error('[API] Call error:', err);
         if (hintText) {
-            hintText.innerHTML = `Comparing configured weights (left) with computed similarity (right).`;
+            hintText.innerHTML = `⚠️ Connection error to Hugging Face backend. Please verify your Space is Running.`;
         }
-        renderRightResultsPanel(planetInfo.name, lat, lng, resolvedLat, resolvedLng, currentWeightsSnapshot, null);
+        alert("Could not retrieve analog coordinates from backend. Please verify Hugging Face Space status.");
     });
-
-    setTimeout(() => {
-        switchPlanet(targetPlanet);
-        const firstPoint = activeAnalogsData[0] || { lat: resolvedLat, lng: resolvedLng };
-        renderTargetPoint(firstPoint.lat, firstPoint.lng, PLANETS_DATA.earth.uiAccent);
-        globe.pointOfView({ lat: firstPoint.lat, lng: firstPoint.lng, altitude: 1.5 }, 1400);
-    }, 1100);
 }
 
 // =========================================================================
