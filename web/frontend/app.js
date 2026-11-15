@@ -88,6 +88,12 @@ function renderTargetPoint(lat, lng, accentColor) {
         .pointsData([{ lat, lng }]);
 }
 
+function renderMultiplePoints(points, accentColor) {
+    globe
+        .pointColor(() => accentColor)
+        .pointsData(points);
+}
+
 function clearTargetPoint() {
     globe.pointsData([]);
 }
@@ -161,9 +167,11 @@ function renderRightResultsPanel(originPlanetName, originLat, originLng, targetL
             activeAnalogsData = apiResult.candidatos.map((c, idx) => ({
                 lat: parseFloat(Number(c.latitud !== undefined ? c.latitud : (c.lat || 0)).toFixed(2)),
                 lng: parseFloat(Number(c.longitud !== undefined ? c.longitud : (c.lon || c.lng || 0)).toFixed(2)),
-                similarity: c.similitud !== undefined ? Math.round(c.similitud) : Math.round(Math.max(65, 100 - (Number(c.distancia || 0.1) * 12))),
-                variablesSim: c.normalizadas ? c.normalizadas.map(v => Math.round(Math.min(99, Math.max(50, Math.abs(v) <= 1 ? v * 100 : v)))) : null,
-                region: `Candidato #${c.rango || (idx + 1)}${c.cluster !== undefined ? ` (Cluster ${c.cluster})` : ''}`
+                similarity: c.similitud !== undefined ? Math.round(c.similitud) : (c.similarity !== undefined ? Math.round(c.similarity) : Math.round(Math.max(65, 100 - (Number(c.distancia || 0.1) * 12)))),
+                variablesSim: c.variablesSim || (c.normalizadas ? c.normalizadas.map(v => Math.round(Math.min(99, Math.max(50, 100 - Math.abs(Number(v)) * 25)))) : null),
+                region: c.ubicacion || `Candidato #${c.rango || (idx + 1)}${c.cluster !== undefined ? ` (Cluster ${c.cluster})` : ''}`,
+                distancia: c.distancia !== undefined ? Number(c.distancia).toFixed(4) : undefined,
+                cluster: c.cluster
             }));
         } else {
             activeAnalogsData = apiResult.analogos || apiResult.puntos_analogos || apiResult.alternatives;
@@ -301,7 +309,6 @@ function setupAnalogsAccordion() {
                 const targetAnalogue = activeAnalogsData[index];
                 if (!targetAnalogue) return;
 
-                renderTargetPoint(targetAnalogue.lat, targetAnalogue.lng, PLANETS_DATA.earth.uiAccent);
                 globe.pointOfView({ lat: targetAnalogue.lat, lng: targetAnalogue.lng, altitude: 1.4 }, 1200);
             });
         }
@@ -358,7 +365,10 @@ async function processRegionSelection(planetKey, lat, lng, source) {
         renderRightResultsPanel(planetInfo.name, lat, lng, resolvedLat, resolvedLng, currentWeightsSnapshot, apiResult);
 
         const firstPoint = (activeAnalogsData && activeAnalogsData[0]) || { lat: resolvedLat, lng: resolvedLng };
-        renderTargetPoint(firstPoint.lat, firstPoint.lng, PLANETS_DATA.earth.uiAccent);
+        const allPoints = (activeAnalogsData && activeAnalogsData.length > 0)
+            ? activeAnalogsData.map(a => ({ lat: a.lat, lng: a.lng }))
+            : [firstPoint];
+        renderMultiplePoints(allPoints, PLANETS_DATA.earth.uiAccent);
         globe.pointOfView({ lat: firstPoint.lat, lng: firstPoint.lng, altitude: 1.5 }, 1200);
     }).catch(err => {
         console.error('[API] Call error:', err);
