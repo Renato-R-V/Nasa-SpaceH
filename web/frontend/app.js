@@ -156,8 +156,18 @@ function renderRightResultsPanel(originPlanetName, originLat, originLng, targetL
     const toggleRightBtn = document.getElementById('toggle-right-panel');
     if (!panel) return;
 
-    if (apiResult && typeof apiResult === 'object' && (apiResult.analogos || apiResult.puntos_analogos || apiResult.alternatives)) {
-        activeAnalogsData = apiResult.analogos || apiResult.puntos_analogos || apiResult.alternatives;
+    if (apiResult && typeof apiResult === 'object' && (apiResult.candidatos || apiResult.analogos || apiResult.puntos_analogos || apiResult.alternatives)) {
+        if (apiResult.candidatos && Array.isArray(apiResult.candidatos)) {
+            activeAnalogsData = apiResult.candidatos.map((c, idx) => ({
+                lat: parseFloat(Number(c.latitud !== undefined ? c.latitud : (c.lat || 0)).toFixed(2)),
+                lng: parseFloat(Number(c.longitud !== undefined ? c.longitud : (c.lon || c.lng || 0)).toFixed(2)),
+                similarity: c.similitud !== undefined ? Math.round(c.similitud) : Math.round(Math.max(65, 100 - (Number(c.distancia || 0.1) * 12))),
+                variablesSim: c.normalizadas ? c.normalizadas.map(v => Math.round(Math.min(99, Math.max(50, Math.abs(v) <= 1 ? v * 100 : v)))) : null,
+                region: `Candidato #${c.rango || (idx + 1)}${c.cluster !== undefined ? ` (Cluster ${c.cluster})` : ''}`
+            }));
+        } else {
+            activeAnalogsData = apiResult.analogos || apiResult.puntos_analogos || apiResult.alternatives;
+        }
     } else {
         activeAnalogsData = [];
         const baseSim = 94;
@@ -327,7 +337,11 @@ async function processRegionSelection(planetKey, lat, lng, source) {
         console.log('[API] Response received:', apiResult);
 
         if (apiResult && typeof apiResult === 'object') {
-            if (apiResult.lat !== undefined && apiResult.lon !== undefined) {
+            if (apiResult.candidatos && Array.isArray(apiResult.candidatos) && apiResult.candidatos.length > 0) {
+                const c0 = apiResult.candidatos[0];
+                resolvedLat = parseFloat(Number(c0.latitud !== undefined ? c0.latitud : (c0.lat || 0)).toFixed(2));
+                resolvedLng = parseFloat(Number(c0.longitud !== undefined ? c0.longitud : (c0.lon || c0.lng || 0)).toFixed(2));
+            } else if (apiResult.lat !== undefined && apiResult.lon !== undefined) {
                 resolvedLat = parseFloat(Number(apiResult.lat).toFixed(2));
                 resolvedLng = parseFloat(Number(apiResult.lon).toFixed(2));
             } else if (apiResult.coordenadas) {
