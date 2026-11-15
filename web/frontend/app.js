@@ -37,10 +37,11 @@ const PLANETS_DATA = {
 
 let currentPlanetKey = "mars";
 let isViewingEarth = false;
+let activeAnalogsData = [];
 
 // 2. INICIALIZACIÓN DEL GLOBO 3D HIPERREALISTA
 const container = document.getElementById('globe-container');
-const initWidth = container.clientWidth || (window.innerWidth - 330);
+const initWidth = container.clientWidth || (window.innerWidth - 360);
 const initHeight = container.clientHeight || window.innerHeight;
 
 const globe = GlobeInstance()(container)
@@ -59,7 +60,6 @@ const globe = GlobeInstance()(container)
     .pointAltitude(0.015)
     .pointRadius(0.55);
 
-// Desactivar rotación automática para que solo gire cuando el usuario lo mueva
 globe.controls().autoRotate = false;
 
 function resizeGlobe() {
@@ -125,13 +125,11 @@ function switchPlanet(planetKey) {
     }
 }
 
-// 3. SELECTOR DE PLANETA EN EL PANEL LATERAL
 const planetSelect = document.getElementById('planet-select');
 planetSelect.addEventListener('change', (e) => {
     switchPlanet(e.target.value);
 });
 
-// 4. DETECCIÓN DE CLICS SOBRE LA SUPERFICIE DEL PLANETA
 globe.onGlobeClick(({ lat, lng }) => {
     if (isViewingEarth) return;
 
@@ -149,101 +147,110 @@ globe.onGlobeClick(({ lat, lng }) => {
     processRegionSelection(currentPlanetKey, roundedLat, roundedLng, "Clic en Globo 3D");
 });
 
-// Genera el HTML del Panel Derecho con la comparación de similitud de cada variable
+// =========================================================================
+// RENDERIZADO DEL PANEL DERECHO CON LOS 10 ANÁLOGOS DESPLEGABLES
+// =========================================================================
+
 function renderRightResultsPanel(originPlanetName, originLat, originLng, targetLat, targetLng, weightsSnapshot, apiResult = null) {
     const panel = document.getElementById('results-panel');
     const toggleRightBtn = document.getElementById('toggle-right-panel');
     if (!panel) return;
 
-    const backendSims = (apiResult && typeof apiResult === 'object')
-        ? (apiResult.similitudes || apiResult.similarities || apiResult.variables_similitud || null)
-        : null;
-
-    const items = VARIABLE_CONFIG.map((v, idx) => {
-        const weight = weightsSnapshot[v.key] ?? 0.5;
-        let similarityPct;
-
-        if (backendSims && backendSims[v.key] !== undefined) {
-            const raw = Number(backendSims[v.key]);
-            similarityPct = raw <= 1 ? Math.round(raw * 100) : Math.round(raw);
-        } else {
-            const seed = Math.abs(Math.sin((originLat + idx * 13) * 0.17 + originLng * 0.11));
-            const baseSim = 74 + Math.round(weight * 16 + seed * 9);
-            similarityPct = Math.min(99, Math.max(60, baseSim));
-        }
-
-        return {
-            key: v.key,
-            label: v.label,
-            weight,
-            similarityPct
-        };
-    });
-
-    const totalWeight = items.reduce((acc, item) => acc + item.weight, 0);
-    const globalSimilarity = totalWeight > 0
-        ? Math.round(items.reduce((acc, item) => acc + (item.similarityPct * item.weight), 0) / totalWeight)
-        : Math.round(items.reduce((acc, item) => acc + item.similarityPct, 0) / items.length);
-
-    const sortedByWeight = [...items].sort((a, b) => b.weight - a.weight);
-    const maxW = sortedByWeight[0].weight;
-    const minW = sortedByWeight[sortedByWeight.length - 1].weight;
-    const isBalanced = Math.abs(maxW - minW) < 0.01;
-
-    let algorithmReason = "";
-    if (apiResult && typeof apiResult === 'object' && (apiResult.motivo || apiResult.reason || apiResult.explicacion)) {
-        algorithmReason = apiResult.motivo || apiResult.reason || apiResult.explicacion;
-    } else if (isBalanced) {
-        const bestMatch = [...items].sort((a, b) => b.similarityPct - a.similarityPct)[0];
-        algorithmReason = `Este punto terrestre presenta una <strong>similitud global del ${globalSimilarity}%</strong> bajo ponderación uniforme. Destaca especialmente su cercanía en <strong>${bestMatch.label} (${bestMatch.similarityPct}%)</strong> respecto al terreno analizado en ${originPlanetName}.`;
+    if (apiResult && typeof apiResult === 'object' && (apiResult.analogos || apiResult.puntos_analogos || apiResult.alternatives)) {
+        activeAnalogsData = apiResult.analogos || apiResult.puntos_analogos || apiResult.alternatives;
     } else {
-        const topWeighted = sortedByWeight.filter(i => i.weight === maxW || i.weight >= 0.65).slice(0, 2);
-        const desc = topWeighted.map(i => `<strong>${i.label}</strong> (peso ${Math.round(i.weight * 100)}%, similitud ${i.similarityPct}%)`).join(' y ');
-        algorithmReason = `El algoritmo ha seleccionado estas coordenadas porque maximizan la coincidencia en tus variables prioritarias: ${desc}, logrando un ajuste global del <strong>${globalSimilarity}%</strong> frente a ${originPlanetName}.`;
+        activeAnalogsData = [];
+        const baseSim = 94;
+        for (let i = 0; i < 10; i++) {
+            const sim = Math.max(65, baseSim - (i * 3.2));
+            const latOffset = (i * 4.5) * (i % 2 === 0 ? 1 : -1);
+            const lngOffset = (i * 7.2) * (i % 3 === 0 ? 1 : -1);
+            
+            const varsSim = VARIABLE_CONFIG.map((v, vIdx) => {
+                const seed = Math.abs(Math.sin((originLat + i * 7 + vIdx * 13) * 0.17));
+                return Math.min(99, Math.max(55, Math.round(sim + (seed * 10 - 5))));
+            });
+
+            activeAnalogsData.push({
+                lat: parseFloat(Math.min(85, Math.max(-85, targetLat + latOffset)).toFixed(2)),
+                lng: parseFloat(Math.min(180, Math.max(-180, targetLng + lngOffset)).toFixed(2)),
+                similarity: Math.round(sim),
+                variablesSim: varsSim,
+                region: `Zona Análoga ${i + 1}`
+            });
+        }
     }
 
-    const rowsHTML = items.map(item => `
-        <div class="sim-row">
-            <div class="sim-row-top">
-                <span class="sim-var-name">${item.label}</span>
-                <div class="sim-metrics">
-                    <span class="sim-weight-tag" title="Peso configurado en el panel izquierdo">Peso: ${Math.round(item.weight * 100)}%</span>
-                    <span class="sim-score-tag" title="Porcentaje de cercanía en la Tierra">${item.similarityPct}%</span>
+    const analogsHTML = activeAnalogsData.map((alt, index) => {
+        const items = VARIABLE_CONFIG.map((v, idx) => {
+            const weight = weightsSnapshot[v.key] ?? 0.5;
+            const similarityPct = alt.variablesSim ? alt.variablesSim[idx] : alt.similarity;
+            return {
+                label: v.label,
+                weight,
+                similarityPct
+            };
+        });
+
+        const rowsHTML = items.map(item => `
+            <div class="sim-row">
+                <div class="sim-row-top">
+                    <span class="sim-var-name">${item.label}</span>
+                    <div class="sim-metrics">
+                        <span class="sim-weight-tag">Peso: ${Math.round(item.weight * 100)}%</span>
+                        <span class="sim-score-tag">${item.similarityPct}%</span>
+                    </div>
+                </div>
+                <div class="sim-bar-track">
+                    <div class="sim-bar-fill" style="width: ${item.similarityPct}%;"></div>
                 </div>
             </div>
-            <div class="sim-bar-track">
-                <div class="sim-bar-fill" style="width: ${item.similarityPct}%;"></div>
+        `).join('');
+
+        const isOpenClass = index === 0 ? 'is-open' : '';
+
+        return `
+            <div class="analogue-dropdown-item ${isOpenClass}" data-index="${index}">
+                <div class="analogue-dropdown-header">
+                    <span class="analogue-rank">#${index + 1} ${index === 0 ? '(Principal)' : ''}</span>
+                    <span class="analogue-coords">${alt.lat}°, ${alt.lng}°</span>
+                    <span class="analogue-pill-small">${alt.similarity}% MATCH</span>
+                </div>
+                <div class="analogue-dropdown-body">
+                    <div class="coords-compare-grid" style="margin-bottom: 8px;">
+                        <div class="coord-box">
+                            <span class="label">ORIGEN · ${originPlanetName.split(' ')[0].toUpperCase()}</span>
+                            <span class="value">${originLat}°, ${originLng}°</span>
+                        </div>
+                        <div class="coord-box target">
+                            <span class="label">ANÁLOGO #${index + 1}</span>
+                            <span class="value">${alt.lat}°, ${alt.lng}°</span>
+                        </div>
+                    </div>
+                    <div class="similarity-list" style="margin-bottom: 8px;">
+                        ${rowsHTML}
+                    </div>
+                    <button type="button" class="btn-fly-to" data-index="${index}">
+                        Centrar y Explorar en el Globo 3D
+                    </button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     panel.innerHTML = `
         <div class="results-header">
-            <h2>SIMILITUD ANÁLOGA</h2>
-            <span class="similarity-pill">${globalSimilarity}% MATCH</span>
-        </div>
-
-        <div class="coords-compare-grid">
-            <div class="coord-box">
-                <span class="label">ORIGEN · ${originPlanetName.split(' ')[0].toUpperCase()}</span>
-                <span class="value">${originLat}°, ${originLng}°</span>
-            </div>
-            <div class="coord-box target">
-                <span class="label">ANÁLOGO · TIERRA</span>
-                <span class="value">${targetLat}°, ${targetLng}°</span>
-            </div>
+            <h2>TOP 10 ANÁLOGOS</h2>
+            <span class="similarity-pill">Tierra</span>
         </div>
 
         <div class="reason-box">
-            <span class="reason-title">Criterio del Algoritmo</span>
-            <p>${algorithmReason}</p>
+            <span class="reason-title">Panel de Resultados</span>
+            <p>Haz clic en cualquiera de los 10 puntos para ver sus estadísticas completas y centrar el globo 3D.</p>
         </div>
 
-        <div>
-            <label class="section-title" style="display:block; margin-bottom:10px;">Cercanía por Variable (Tierra vs. Origen)</label>
-            <div class="similarity-list">
-                ${rowsHTML}
-            </div>
+        <div class="analogue-accordion-list" style="margin-top: 10px;">
+            ${analogsHTML}
         </div>
     `;
 
@@ -256,7 +263,37 @@ function renderRightResultsPanel(originPlanetName, originLat, originLng, targetL
         toggleRightBtn.textContent = '▶';
     }
 
+    setupAnalogsAccordion();
     setTimeout(resizeGlobe, 50);
+}
+
+function setupAnalogsAccordion() {
+    const dropdownItems = document.querySelectorAll('.analogue-dropdown-item');
+
+    dropdownItems.forEach(item => {
+        const header = item.querySelector('.analogue-dropdown-header');
+        const flyBtn = item.querySelector('.btn-fly-to');
+        const index = parseInt(item.dataset.index, 10);
+
+        header.addEventListener('click', () => {
+            const wasOpen = item.classList.contains('is-open');
+            dropdownItems.forEach(i => i.classList.remove('is-open'));
+            if (!wasOpen) {
+                item.classList.add('is-open');
+            }
+        });
+
+        if (flyBtn) {
+            flyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const targetAnalogue = activeAnalogsData[index];
+                if (!targetAnalogue) return;
+
+                renderTargetPoint(targetAnalogue.lat, targetAnalogue.lng, PLANETS_DATA.earth.uiAccent);
+                globe.pointOfView({ lat: targetAnalogue.lat, lng: targetAnalogue.lng, altitude: 1.4 }, 1200);
+            });
+        }
+    });
 }
 
 // 5. PROCESAR REGIÓN Y TRANSICIÓN CINEMATOGRÁFICA
@@ -304,8 +341,9 @@ async function processRegionSelection(planetKey, lat, lng, source) {
         renderRightResultsPanel(planetInfo.name, lat, lng, resolvedLat, resolvedLng, currentWeightsSnapshot, apiResult);
 
         if (isViewingEarth) {
-            renderTargetPoint(resolvedLat, resolvedLng, PLANETS_DATA.earth.uiAccent);
-            globe.pointOfView({ lat: resolvedLat, lng: resolvedLng, altitude: 1.5 }, 1000);
+            const firstPoint = activeAnalogsData[0] || { lat: resolvedLat, lng: resolvedLng };
+            renderTargetPoint(firstPoint.lat, firstPoint.lng, PLANETS_DATA.earth.uiAccent);
+            globe.pointOfView({ lat: firstPoint.lat, lng: firstPoint.lng, altitude: 1.5 }, 1000);
         }
     }).catch(err => {
         console.error('[API] Error en llamada:', err);
@@ -317,8 +355,9 @@ async function processRegionSelection(planetKey, lat, lng, source) {
 
     setTimeout(() => {
         switchPlanet(targetPlanet);
-        renderTargetPoint(resolvedLat, resolvedLng, PLANETS_DATA.earth.uiAccent);
-        globe.pointOfView({ lat: resolvedLat, lng: resolvedLng, altitude: 1.5 }, 1400);
+        const firstPoint = activeAnalogsData[0] || { lat: resolvedLat, lng: resolvedLng };
+        renderTargetPoint(firstPoint.lat, firstPoint.lng, PLANETS_DATA.earth.uiAccent);
+        globe.pointOfView({ lat: firstPoint.lat, lng: firstPoint.lng, altitude: 1.5 }, 1400);
     }, 1100);
 }
 
@@ -326,7 +365,6 @@ async function processRegionSelection(planetKey, lat, lng, source) {
 // 6. VARIABLE GLOBAL EN CÓDIGO: VARIABLES Y COORDENADAS PARA LA API
 // =========================================================================
 
-// URL base del Space en Hugging Face
 const HF_API_BASE_URL = "https://spaceh-nasa-spaceapps.hf.space";
 
 async function callHuggingFaceAPI(payload) {
@@ -370,12 +408,7 @@ async function callHuggingFaceAPI(payload) {
 }
 
 export const VARIABLE_CONFIG = [
-    { key: "pendiente_media", label: "Pendiente media", defaultVal: 50 },
-    { key: "pendiente_p90", label: "Pendiente P90", defaultVal: 50 },
-    { key: "rugosidad", label: "Rugosidad", defaultVal: 50 },
-    { key: "orientacion", label: "Orientación", defaultVal: 50 },
     { key: "relieve", label: "Relieve", defaultVal: 50 },
-    { key: "valles_crestas", label: "Valles y crestas", defaultVal: 50 },
     { key: "ghi", label: "GHI", defaultVal: 50 },
     { key: "albedo", label: "Albedo", defaultVal: 50 }
 ];
@@ -387,12 +420,7 @@ export let requestData = {
         lon: null
     },
     variables: {
-        pendiente_media: 0.50,
-        pendiente_p90: 0.50,
-        rugosidad: 0.50,
-        orientacion: 0.50,
         relieve: 0.50,
-        valles_crestas: 0.50,
         ghi: 0.50,
         albedo: 0.50
     }
@@ -530,7 +558,6 @@ function initWeightsUI() {
 
 initWeightsUI();
 
-// 7. ENTRADA MANUAL DE COORDENADAS
 document.getElementById('coord-form').addEventListener('submit', (e) => {
     e.preventDefault();
     if (isViewingEarth) return;
@@ -551,7 +578,6 @@ document.getElementById('coord-form').addEventListener('submit', (e) => {
     }
 });
 
-// 8. RETORNO AL PLANETA DE ORIGEN
 document.getElementById('back-to-origin-btn').addEventListener('click', () => {
     isViewingEarth = false;
     document.getElementById('planet-selector-section').style.display = 'flex';
@@ -582,10 +608,8 @@ document.getElementById('back-to-origin-btn').addEventListener('click', () => {
     }
 });
 
-// 9. AJUSTE DE TAMAÑO EN CASO DE REDIMENSIONAR LA PANTALLA
 window.addEventListener('resize', resizeGlobe);
 
-// 10. PLEGADO / DESPLIEGUE DE PANELES LATERALES PARA VER EL PLANETA LIBRE
 const leftPanel = document.getElementById('ui-panel');
 const toggleLeftBtn = document.getElementById('toggle-left-panel');
 const rightPanel = document.getElementById('results-panel');
@@ -610,133 +634,66 @@ if (toggleRightBtn && rightPanel) {
 }
 
 // =========================================================================
-// 11. TOOLTIPS / CUADROS DE INFORMACIÓN DE CADA VARIABLE
+// TOOLTIPS
 // =========================================================================
 
-// EDITA AQUÍ LA INFORMACIÓN DE CADA VARIABLE:
-const VARIABLE_INFO = {
-    pendiente_media: {
-        title: "Pendiente Media",
-        description: "Inclinación promedio del terreno en grados (°). Evalúa la estabilidad para aterrizaje y movilidad de vehículos."
-    },
-    pendiente_p90: {
-        title: "Pendiente P90",
-        description: "Percentil 90 de la pendiente. Identifica las zonas más escarpadas o de mayor riesgo topográfico."
-    },
-    rugosidad: {
-        title: "Rugosidad",
-        description: "Irregularidad micro-topográfica de la superficie (presencia de rocas, cráteres menores o escombros)."
-    },
-    orientacion: {
-        title: "Orientación (Aspect)",
-        description: "Dirección cardinal hacia la que apunta la ladera (0° - 360°). Influye en la captación solar y sombra térmica."
-    },
+const variableInfoData = {
     relieve: {
-        title: "Relieve Local",
-        description: "Amplitud altitudinal (diferencia entre cota máxima y mínima) dentro de la celda de análisis."
-    },
-    valles_crestas: {
-        title: "Valles y Crestas (TPI)",
-        description: "Índice de Posición Topográfica que diferencia depresiones/cauces frente a crestas o elevaciones."
+        title: "Relieve",
+        body: "Desviación estándar de las elevaciones dentro de un radio regional, que mide la amplitud y variación vertical del terreno."
     },
     ghi: {
-        title: "GHI (Irradiancia Global Horizontal)",
-        description: "Energía solar total incidente por unidad de superficie. Clave para generación fotovoltaica."
+        title: "GHI (Irradiancia)",
+        body: "Estimación de la energía e insolación directa que recibe la superficie por unidad de área, influenciada por la latitud, la pendiente y la orientación."
     },
     albedo: {
-        title: "Albedo Superficial",
-        description: "Proporción de radiación solar reflejada por el suelo (0 a 1). Relacionado con composición y balance térmico."
+        title: "Albedo",
+        body: "Proporción de luz solar que la superficie refleja directamente al espacio en comparación con la que absorbe."
     }
 };
 
-function initInfoTooltips() {
+function setupVariableTooltips() {
+    const infoButtons = document.querySelectorAll('.info-btn');
     const tooltip = document.getElementById('var-tooltip');
     const tooltipTitle = document.getElementById('var-tooltip-title');
     const tooltipBody = document.getElementById('var-tooltip-body');
-    const infoButtons = document.querySelectorAll('.info-btn');
 
-    if (!tooltip || !tooltipTitle || !tooltipBody) return;
-
-    let activeBtn = null;
-
-    function closeTooltip() {
-        tooltip.classList.remove('visible');
-        tooltip.setAttribute('aria-hidden', 'true');
-        if (activeBtn) {
-            activeBtn.classList.remove('active');
-            activeBtn = null;
-        }
-    }
-
-    function openTooltip(btn) {
-        const key = btn.getAttribute('data-info-key');
-        const info = VARIABLE_INFO[key];
-        if (!info) return;
-
-        // Aplicar color dinámico del planeta actual (Marte, Luna o Tierra)
-        const planet = PLANETS_DATA[currentPlanetKey] || PLANETS_DATA.mars;
-        tooltip.style.borderColor = planet.uiAccent;
-        tooltipTitle.style.color = planet.uiAccent;
-
-        // Rellenar contenido
-        tooltipTitle.textContent = info.title;
-        tooltipBody.innerHTML = info.description;
-
-        // Posicionar justo a la derecha del panel izquierdo (flotando sobre el 3D)
-        const rect = btn.getBoundingClientRect();
-        const tooltipWidth = 270;
-        let left = rect.right + 16;
-        let top = rect.top - 12;
-
-        // Si en pantallas pequeñas se sale por la derecha, ajustarlo debajo
-        if (left + tooltipWidth > window.innerWidth - 12) {
-            left = Math.max(12, rect.left - tooltipWidth / 2);
-            top = rect.bottom + 8;
-        }
-
-        // Evitar que se salga por la parte inferior de la ventana
-        tooltip.style.left = `${left}px`;
-        tooltip.style.top = `${top}px`;
-        tooltip.classList.add('visible');
-        tooltip.setAttribute('aria-hidden', 'false');
-
-        const tipRect = tooltip.getBoundingClientRect();
-        if (tipRect.bottom > window.innerHeight - 12) {
-            tooltip.style.top = `${Math.max(12, window.innerHeight - tipRect.height - 12)}px`;
-        }
-
-        if (activeBtn) activeBtn.classList.remove('active');
-        btn.classList.add('active');
-        activeBtn = btn;
-    }
+    if (!tooltip || infoButtons.length === 0) return;
 
     infoButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (activeBtn === btn) {
-                closeTooltip();
-            } else {
-                openTooltip(btn);
+        const key = btn.getAttribute('data-info-key');
+
+        btn.addEventListener('mouseenter', () => {
+            const data = variableInfoData[key];
+            if (!data) return;
+
+            tooltipTitle.textContent = data.title;
+            tooltipBody.textContent = data.body;
+            tooltip.classList.add('is-visible');
+            btn.classList.add('is-active');
+        });
+
+        btn.addEventListener('mousemove', (e) => {
+            const offset = 14;
+            let x = e.clientX + offset;
+            let y = e.clientY + offset;
+
+            if (x + 240 > window.innerWidth) {
+                x = e.clientX - 240 - offset;
             }
+            if (y + 130 > window.innerHeight) {
+                y = e.clientY - 130 - offset;
+            }
+
+            tooltip.style.left = `${x}px`;
+            tooltip.style.top = `${y}px`;
+        });
+
+        btn.addEventListener('mouseleave', () => {
+            tooltip.classList.remove('is-visible');
+            btn.classList.remove('is-active');
         });
     });
-
-    // Cerrar al hacer clic fuera, pulsar Escape o hacer scroll
-    document.addEventListener('click', (e) => {
-        if (!tooltip.contains(e.target) && !e.target.closest('.info-btn')) {
-            closeTooltip();
-        }
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeTooltip();
-    });
-
-    const slidersContainer = document.getElementById('sliders-container');
-    if (slidersContainer) {
-        slidersContainer.addEventListener('scroll', closeTooltip);
-    }
 }
 
-initInfoTooltips();
+setupVariableTooltips();

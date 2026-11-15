@@ -12,7 +12,7 @@
     --text-muted: #64748B;
 
     --left-panel-width: 330px;
-    --right-panel-width: 320px;
+    --right-panel-width: 360px;
 
     /* Tema por defecto: Marte */
     --theme-accent: #EF4444;
@@ -67,7 +67,7 @@ body, html {
     position: relative;
 }
 
-/* Panel Lateral Izquierdo (más estrecho y plegable) */
+/* Panel Lateral Izquierdo */
 #ui-panel {
     width: var(--left-panel-width);
     min-width: var(--left-panel-width);
@@ -141,36 +141,6 @@ body, html {
 .panel-header {
     border-bottom: 1px solid var(--border-subtle);
     padding-bottom: 12px;
-}
-
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--theme-accent);
-    background: var(--theme-tint);
-    padding: 3px 9px;
-    border-radius: 20px;
-    border: 1px solid var(--theme-border);
-    margin-bottom: 10px;
-    letter-spacing: 1px;
-}
-
-.pulse-dot {
-    width: 6px;
-    height: 6px;
-    background-color: var(--theme-accent);
-    border-radius: 50%;
-    box-shadow: 0 0 8px var(--theme-accent);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(0.95); opacity: 0.8; }
-    50% { transform: scale(1.3); opacity: 1; }
-    100% { transform: scale(0.95); opacity: 0.8; }
 }
 
 .panel-header h1 {
@@ -432,7 +402,10 @@ select:focus, input:focus {
     cursor: pointer;
 }
 
-/* Panel Derecho: Resultados y Similitud (más estrecho y plegable) */
+/* =========================================================================
+   PANEL DERECHO Y ACORDEÓN (Sin cortes ni scroll anidado)
+   ========================================================================= */
+
 .results-panel {
     width: var(--right-panel-width);
     min-width: var(--right-panel-width);
@@ -444,11 +417,11 @@ select:focus, input:focus {
     background: var(--bg-panel);
     backdrop-filter: blur(20px);
     border-left: 1px solid var(--border-subtle);
-    padding: 20px 18px;
+    padding: 20px 18px 160px 18px; /* Padding inferior amplio para visualizar cómodamente el #10 */
     display: flex;
     flex-direction: column;
     gap: 14px;
-    overflow-y: auto;
+    overflow-y: auto; /* Scroll global fluido para todo el panel */
     box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7);
     transition: margin-right 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease;
 }
@@ -613,9 +586,8 @@ select:focus, input:focus {
     background: var(--theme-accent);
 }
 
-
 /* =========================================================================
-   BOTÓN ⓘ DE INFORMACIÓN DE VARIABLE
+   BOTÓN ⓘ Y TOOLTIP FLOTANTE DE VARIABLE
    ========================================================================= */
 
 .slider-label-group {
@@ -653,10 +625,6 @@ select:focus, input:focus {
     transform: scale(1.15);
 }
 
-/* =========================================================================
-   TOOLTIP FLOTANTE DE VARIABLE
-   ========================================================================= */
-
 .var-tooltip {
     position: fixed;
     z-index: 9999;
@@ -676,7 +644,6 @@ select:focus, input:focus {
 .var-tooltip.is-visible {
     opacity: 1;
     transform: translateY(0) scale(1);
-    pointer-events: none;
 }
 
 .var-tooltip-title {
@@ -701,90 +668,90 @@ select:focus, input:focus {
     color: #f1f5f9;
 }
 
-
 /* =========================================================================
-   BOTÓN ⓘ DE INFORMACIÓN DE VARIABLE
-   ========================================================================= */
+   ESTILOS PARA EL ACORDEÓN DE LOS 10 ANÁLOGOS
+   ======================================================================== */
 
-.slider-label-group {
+.analogue-accordion-list {
     display: flex;
-    align-items: center;
-    gap: 5px;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
 }
 
-.info-btn {
-    display: inline-flex;
+.analogue-dropdown-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 7px;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+
+.analogue-dropdown-item:hover {
+    border-color: var(--theme-border);
+}
+
+.analogue-dropdown-item.is-open {
+    border-color: var(--theme-accent);
+    background: rgba(19, 24, 35, 0.98);
+}
+
+.analogue-dropdown-header {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 1px solid rgba(56, 189, 248, 0.45);
-    background: rgba(56, 189, 248, 0.08);
-    color: #38bdf8;
-    font-size: 0.65rem;
-    line-height: 1;
+    padding: 10px 12px;
     cursor: pointer;
-    padding: 0;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-    font-style: normal;
+    font-size: 0.78rem;
     font-family: 'JetBrains Mono', monospace;
 }
 
-.info-btn:hover,
-.info-btn.is-active {
-    background: rgba(56, 189, 248, 0.25);
-    border-color: #38bdf8;
-    box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
-    color: #ffffff;
-    transform: scale(1.15);
+.analogue-rank {
+    color: var(--theme-accent);
+    font-weight: 700;
 }
 
-/* =========================================================================
-   TOOLTIP FLOTANTE DE VARIABLE
-   ========================================================================= */
-
-.var-tooltip {
-    position: fixed;
-    z-index: 9999;
-    width: 230px;
-    background: rgba(10, 20, 40, 0.97);
-    border: 1px solid rgba(56, 189, 248, 0.45);
-    border-radius: 10px;
-    padding: 11px 13px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 20px rgba(56, 189, 248, 0.15);
-    pointer-events: none;
-    opacity: 0;
-    transform: translateY(4px) scale(0.97);
-    transition: opacity 0.18s ease, transform 0.18s ease;
-    backdrop-filter: blur(16px);
+.analogue-coords {
+    color: var(--text-primary);
 }
 
-.var-tooltip.is-visible {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    pointer-events: none;
+.analogue-pill-small {
+    background: var(--theme-tint);
+    border: 1px solid var(--theme-border);
+    color: var(--theme-accent);
+    padding: 2px 7px;
+    border-radius: 12px;
+    font-size: 0.68rem;
 }
 
-.var-tooltip-title {
+.analogue-dropdown-body {
+    display: none;
+    padding: 12px;
+    background: rgba(7, 9, 14, 0.7);
+    border-top: 1px solid var(--border-subtle);
+    flex-direction: column;
+    gap: 10px;
+}
+
+.analogue-dropdown-item.is-open .analogue-dropdown-body {
+    display: flex;
+}
+
+.btn-fly-to {
+    background: var(--theme-tint);
+    color: var(--theme-accent);
+    border: 1px solid var(--theme-border);
+    padding: 8px 12px;
+    border-radius: 6px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.72rem;
-    font-weight: 700;
-    color: #38bdf8;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.2);
-    padding-bottom: 5px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    font-weight: 600;
 }
 
-.var-tooltip-body {
-    font-size: 0.78rem;
-    color: #cbd5e1;
-    line-height: 1.5;
-}
-
-.var-tooltip-body strong {
-    color: #f1f5f9;
+.btn-fly-to:hover {
+    background: var(--theme-accent);
+    color: var(--theme-btn-text);
 }

@@ -13,8 +13,7 @@
     <!-- Panel Lateral Izquierdo: Parámetros de Entrada -->
     <aside id="ui-panel">
         <header class="panel-header">
-            <div class="status-badge"><span class="pulse-dot"></span> SYSTEM ONLINE</div>
-            <h1>EXOPLANETARY 3D</h1>
+            <h1>SPACE H</h1>
             <p id="current-view-label">Módulo Activo: <strong id="planet-name">Marte (Superficie)</strong></p>
         </header>
 
@@ -33,20 +32,15 @@
         <section class="control-section" id="weights-section">
             <div class="section-title-row">
                 <label class="section-title">02. Variables y Ponderación</label>
-                <span class="badge-count" id="active-vars-count">8 VARS</span>
+                <span class="badge-count" id="active-vars-count">3 VARS</span>
             </div>
 
             <div class="select-wrapper">
                 <select id="variable-select">
                     <option value="all">Todas las Variables</option>
-                    <option value="pendiente_media">1. Pendiente media</option>
-                    <option value="pendiente_p90">2. Pendiente P90</option>
-                    <option value="rugosidad">3. Rugosidad</option>
-                    <option value="orientacion">4. Orientación</option>
-                    <option value="relieve">5. Relieve</option>
-                    <option value="valles_crestas">6. Valles y crestas</option>
-                    <option value="ghi">7. GHI</option>
-                    <option value="albedo">8. Albedo</option>
+                    <option value="relieve">1. Relieve</option>
+                    <option value="ghi">2. GHI</option>
+                    <option value="albedo">3. Albedo</option>
                 </select>
             </div>
 
@@ -59,55 +53,7 @@
                 </div>
 
                 <div class="sliders-list" id="sliders-container">
-                    <!-- 1. Pendiente media -->
-                    <div class="slider-item" id="item-pendiente_media" data-key="pendiente_media">
-                        <div class="slider-row-header">
-                            <div class="slider-label-group">
-                                <label for="slider-pendiente_media" class="slider-label">Pendiente media</label>
-                                <button type="button" class="info-btn" data-info-key="pendiente_media" aria-label="Información sobre Pendiente media">ⓘ</button>
-                            </div>
-                            <span class="slider-val-badge" id="val-pendiente_media">0.50 (50%)</span>
-                        </div>
-                        <input type="range" class="weight-slider" id="slider-pendiente_media" data-key="pendiente_media" min="0" max="100" value="50" step="1">
-                    </div>
-
-                    <!-- 2. Pendiente P90 -->
-                    <div class="slider-item" id="item-pendiente_p90" data-key="pendiente_p90">
-                        <div class="slider-row-header">
-                            <div class="slider-label-group">
-                                <label for="slider-pendiente_p90" class="slider-label">Pendiente P90</label>
-                                <button type="button" class="info-btn" data-info-key="pendiente_p90" aria-label="Información sobre Pendiente P90">ⓘ</button>
-                            </div>
-                            <span class="slider-val-badge" id="val-pendiente_p90">0.50 (50%)</span>
-                        </div>
-                        <input type="range" class="weight-slider" id="slider-pendiente_p90" data-key="pendiente_p90" min="0" max="100" value="50" step="1">
-                    </div>
-
-                    <!-- 3. Rugosidad -->
-                    <div class="slider-item" id="item-rugosidad" data-key="rugosidad">
-                        <div class="slider-row-header">
-                            <div class="slider-label-group">
-                                <label for="slider-rugosidad" class="slider-label">Rugosidad</label>
-                                <button type="button" class="info-btn" data-info-key="rugosidad" aria-label="Información sobre Rugosidad">ⓘ</button>
-                            </div>
-                            <span class="slider-val-badge" id="val-rugosidad">0.50 (50%)</span>
-                        </div>
-                        <input type="range" class="weight-slider" id="slider-rugosidad" data-key="rugosidad" min="0" max="100" value="50" step="1">
-                    </div>
-
-                    <!-- 4. Orientación -->
-                    <div class="slider-item" id="item-orientacion" data-key="orientacion">
-                        <div class="slider-row-header">
-                            <div class="slider-label-group">
-                                <label for="slider-orientacion" class="slider-label">Orientación</label>
-                                <button type="button" class="info-btn" data-info-key="orientacion" aria-label="Información sobre Orientación">ⓘ</button>
-                            </div>
-                            <span class="slider-val-badge" id="val-orientacion">0.50 (50%)</span>
-                        </div>
-                        <input type="range" class="weight-slider" id="slider-orientacion" data-key="orientacion" min="0" max="100" value="50" step="1">
-                    </div>
-
-                    <!-- 5. Relieve -->
+                    <!-- 1. Relieve -->
                     <div class="slider-item" id="item-relieve" data-key="relieve">
                         <div class="slider-row-header">
                             <div class="slider-label-group">
@@ -119,19 +65,7 @@
                         <input type="range" class="weight-slider" id="slider-relieve" data-key="relieve" min="0" max="100" value="50" step="1">
                     </div>
 
-                    <!-- 6. Valles y crestas -->
-                    <div class="slider-item" id="item-valles_crestas" data-key="valles_crestas">
-                        <div class="slider-row-header">
-                            <div class="slider-label-group">
-                                <label for="slider-valles_crestas" class="slider-label">Valles y crestas</label>
-                                <button type="button" class="info-btn" data-info-key="valles_crestas" aria-label="Información sobre Valles y crestas">ⓘ</button>
-                            </div>
-                            <span class="slider-val-badge" id="val-valles_crestas">0.50 (50%)</span>
-                        </div>
-                        <input type="range" class="weight-slider" id="slider-valles_crestas" data-key="valles_crestas" min="0" max="100" value="50" step="1">
-                    </div>
-
-                    <!-- 7. GHI -->
+                    <!-- 2. GHI -->
                     <div class="slider-item" id="item-ghi" data-key="ghi">
                         <div class="slider-row-header">
                             <div class="slider-label-group">
@@ -143,7 +77,7 @@
                         <input type="range" class="weight-slider" id="slider-ghi" data-key="ghi" min="0" max="100" value="50" step="1">
                     </div>
 
-                    <!-- 8. Albedo -->
+                    <!-- 3. Albedo -->
                     <div class="slider-item" id="item-albedo" data-key="albedo">
                         <div class="slider-row-header">
                             <div class="slider-label-group">
